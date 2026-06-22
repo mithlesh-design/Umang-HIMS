@@ -20,7 +20,7 @@ import { useLabStore } from "@/store/useLabStore"
 import { useLabOrdersStore } from "@/store/useLabOrdersStore"
 import { LAB_CATALOG } from "@/lib/labCatalog"
 import { useRadiologyStore } from "@/store/useRadiologyStore"
-import { useAdmissionStore } from "@/store/useAdmissionStore"
+import { useAdmissionStore, WARD_ORDER } from "@/store/useAdmissionStore"
 import { NeonBadge } from "@/components/ui/neon-badge"
 import { AiPreBrief } from "@/components/features/AiPreBrief"
 import { PatientProfileSummary } from "@/components/PatientProfileSummary"
@@ -171,6 +171,12 @@ export default function DoctorDashboard() {
   const addLabRichOrder = useLabOrdersStore(s => s.addOrder)
   const { addOrderFromDoctor: addRadToStore } = useRadiologyStore()
   const { requestAdmission, beds } = useAdmissionStore()
+
+  const wardSummary = WARD_ORDER.map(w => {
+    const inWard = beds.filter(b => b.ward === w)
+    return { ward: w, total: inWard.length, available: inWard.filter(b => b.status === 'Available').length }
+  }).filter(w => w.total > 0)
+  const totalFreeBeds = wardSummary.reduce((s, w) => s + w.available, 0)
 
   const [medSearch, setMedSearch] = useState("")
   const { confirm, view: dialogView } = useDialogs()
@@ -1194,19 +1200,54 @@ export default function DoctorDashboard() {
               </div>
             </div>
 
-            {/* Bed Availability shortcut */}
-            <Link href="/doctor/beds"
-              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl font-semibold text-sm cursor-pointer transition-all flex-shrink-0"
+            {/* Bed Availability section */}
+            <div
+              className="flex-shrink-0 rounded-2xl p-4 flex flex-col gap-3"
               style={{
-                background: 'linear-gradient(135deg,rgba(14,116,144,0.10),rgba(14,116,144,0.05))',
-                border: '1px solid rgba(14,116,144,0.18)',
-                color: '#0B5A6E',
-                boxShadow: '0 2px 8px rgba(14,116,144,0.10)',
+                background: 'linear-gradient(135deg, rgba(14,116,144,0.06) 0%, rgba(14,116,144,0.03) 100%)',
+                border: '1px solid rgba(14,116,144,0.10)',
+                boxShadow: '0 4px 16px rgba(14,116,144,0.08)',
               }}
             >
-              <Bed className="h-4 w-4 flex-shrink-0" />
-              Bed availability
-            </Link>
+              {/* Header */}
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,#0B5A6E,#0E7490)', boxShadow: '0 3px 8px rgba(14,116,144,0.30)' }}>
+                  <Bed className="h-3.5 w-3.5 text-white" />
+                </div>
+                <span className="font-bold text-sm text-[#0F172A]">Bed Availability</span>
+                <span className={cn(
+                  "ml-auto text-[10px] font-bold rounded-full px-2 py-0.5",
+                  totalFreeBeds === 0 ? 'bg-red-50 text-red-600' :
+                  totalFreeBeds <= 3   ? 'bg-amber-50 text-amber-700' :
+                                         'bg-emerald-50 text-emerald-700'
+                )}>
+                  {totalFreeBeds} free
+                </span>
+              </div>
+
+              {/* Ward rows */}
+              <div className="space-y-2">
+                {wardSummary.map(w => {
+                  const pct = w.total > 0 ? (w.available / w.total) * 100 : 0
+                  const color = w.available === 0 ? 'bg-red-500' : w.available <= Math.max(1, Math.round(w.total * 0.2)) ? 'bg-amber-500' : 'bg-emerald-500'
+                  const textColor = w.available === 0 ? 'text-red-600' : w.available <= Math.max(1, Math.round(w.total * 0.2)) ? 'text-amber-600' : 'text-emerald-600'
+                  return (
+                    <div key={w.ward} className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-600 flex-1 truncate">{w.ward}</span>
+                      <div className="h-1.5 w-14 rounded-full bg-slate-100 overflow-hidden flex-shrink-0">
+                        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className={cn("text-[11px] font-bold w-5 text-right flex-shrink-0", textColor)}>{w.available}</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Link to full board */}
+              <Link href="/doctor/beds" className="flex items-center gap-1 text-[11.5px] font-semibold text-[#0E7490] hover:text-[#0B5A6E] transition-colors">
+                View full board <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
