@@ -1193,6 +1193,20 @@ export default function DoctorDashboard() {
                 )}
               </div>
             </div>
+
+            {/* Bed Availability shortcut */}
+            <Link href="/doctor/beds"
+              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl font-semibold text-sm cursor-pointer transition-all flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg,rgba(14,116,144,0.10),rgba(14,116,144,0.05))',
+                border: '1px solid rgba(14,116,144,0.18)',
+                color: '#0B5A6E',
+                boxShadow: '0 2px 8px rgba(14,116,144,0.10)',
+              }}
+            >
+              <Bed className="h-4 w-4 flex-shrink-0" />
+              Bed availability
+            </Link>
           </div>
         </div>
       )}
