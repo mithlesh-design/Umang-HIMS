@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Stethoscope, Pill, FlaskConical, ScanLine, ArrowLeft, Save, Sparkles, FileText, Send, Plus, X, Activity, AlertTriangle } from "lucide-react"
+import { Stethoscope, Pill, FlaskConical, ScanLine, ArrowLeft, Save, Sparkles, FileText, Send, Plus, X, Activity, AlertTriangle, Bed } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { usePatientStore } from "@/store/usePatientStore"
 import { useLabOrdersStore } from "@/store/useLabOrdersStore"
@@ -361,6 +361,9 @@ export default function DoctorConsultation() {
           </button>
           <button onClick={refer} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-[12.5px] font-semibold cursor-pointer">
             <Send className="h-4 w-4" /> Refer for specialist consult
+          </button>
+          <button onClick={() => router.push('/doctor/beds')} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[rgba(14,116,144,0.07)] hover:bg-[rgba(14,116,144,0.14)] text-[#0B5A6E] text-[12.5px] font-semibold cursor-pointer">
+            <Bed className="h-4 w-4" /> Bed availability
           </button>
           <p className="text-[10.5px] text-slate-400 mt-2">Each action audited; the right role is notified.</p>
         </div>
