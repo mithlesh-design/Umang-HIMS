@@ -885,6 +885,10 @@ export const useLabOrdersStore = create<State>()(persist((set, get) => ({
     // (a) SEED_ORDERS always load on app start — no stale data can empty the phlebotomy queue
     // (b) Doctor-added orders appear immediately in phlebotomy via the shared in-memory store
     partialize: (state) => ({ reflexSuggestions: state.reflexSuggestions }),
+    migrate: (persisted: unknown, _fromVersion: number) => {
+      const s = persisted as Partial<{ reflexSuggestions: ReflexSuggestion[] }>
+      return { reflexSuggestions: Array.isArray(s?.reflexSuggestions) ? s.reflexSuggestions : [] }
+    },
   },
 ))
 
