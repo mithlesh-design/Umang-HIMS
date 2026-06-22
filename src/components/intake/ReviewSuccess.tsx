@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { AlertTriangle, Pencil, CheckCircle, QrCode, Share2, Video, CalendarDays, Building2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { NeonBadge } from "@/components/ui/neon-badge"
-import { triageScore, consultFee, type IntakeForm, type StepId } from "@/lib/intake/data"
+import { triageScore, consultFee, DURATION_OPTIONS, type IntakeForm, type StepId } from "@/lib/intake/data"
 import { cn } from "@/lib/utils"
 
 function fmtDate(iso: string) {
@@ -41,8 +41,12 @@ function Chips({ items, accent }: { items: string[]; accent?: boolean }) {
 }
 
 export function ReviewStep({ form, onEdit }: { form: IntakeForm; onEdit: (id: StepId) => void }) {
-  const triage = triageScore(form.symptoms)
+  const triage = triageScore(form.symptoms, form.symptomDurations)
   const isVideo = form.consultationType === 'video'
+  const durationLabel = (s: string) => {
+    const d = form.symptomDurations[s]
+    return d ? DURATION_OPTIONS.find(o => o.value === d)?.label : undefined
+  }
   return (
     <div className="h-full overflow-y-auto pr-1 space-y-2.5">
       <div className="bg-white rounded-[16px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] divide-y divide-slate-100">
@@ -57,7 +61,22 @@ export function ReviewStep({ form, onEdit }: { form: IntakeForm; onEdit: (id: St
           </p>
           {isVideo && <p className="text-[13px] text-slate-500 mt-0.5">{form.slotDoctor} · {fmtDate(form.slotDate)} {form.slotTime}</p>}
         </Row>
-        <Row label="Symptoms" onEdit={() => onEdit('symptoms')}><Chips items={form.symptoms} /></Row>
+        <Row label="Symptoms" onEdit={() => onEdit('symptoms')}>
+          {form.symptoms.length === 0
+            ? <span className="text-slate-400 text-[14px]">—</span>
+            : <div className="flex flex-wrap gap-1.5">
+                {form.symptoms.map(s => {
+                  const dur = durationLabel(s)
+                  return (
+                    <span key={s} className="flex items-center gap-1 px-2 py-0.5 text-[12px] font-medium rounded-md bg-slate-100 text-slate-700">
+                      {s}
+                      {dur && <span className="text-slate-400 font-normal">· {dur}</span>}
+                    </span>
+                  )
+                })}
+              </div>
+          }
+        </Row>
       </div>
 
       <div className={cn("flex items-center justify-between px-4 py-2.5 rounded-[14px]",
@@ -84,7 +103,7 @@ export function ReviewStep({ form, onEdit }: { form: IntakeForm; onEdit: (id: St
 export function SuccessStep({ form, token, familyToken, wait }: { form: IntakeForm; token: number; familyToken: string | null; wait: number }) {
   const router = useRouter()
   const isVideo = form.consultationType === 'video'
-  const triage = triageScore(form.symptoms)
+  const triage = triageScore(form.symptoms, form.symptomDurations)
   const dotColor = triage.variant === 'danger' ? '#DC2626' : triage.variant === 'warning' ? '#D97706' : triage.variant === 'orange' ? '#EA580C' : '#16A34A'
   const paidLabel = form.payer === 'cashless' ? `Cashless · ${form.insurer || 'insurance'}` : `Paid ₹${consultFee(form)}${form.payMethod === 'counter' ? ' · at counter' : ''}`
   const first = form.name ? `, ${form.name.split(' ')[0]}` : ''

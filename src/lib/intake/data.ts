@@ -16,6 +16,7 @@ export interface IntakeForm {
   age: string
   gender: '' | Gender
   symptoms: string[]
+  symptomDurations: Record<string, string>
   departments: string[]
   slotDoctor: string
   slotDate: string
@@ -37,7 +38,7 @@ export function initialForm(): IntakeForm {
     consultationType: '',
     method: 'type',
     name: '', phone: '', age: '', gender: '',
-    symptoms: [], departments: [],
+    symptoms: [], symptomDurations: {}, departments: [],
     slotDoctor: '', slotDate: '', slotTime: '',
     hasReports: false, dishaConsent: false, familyPhone: '',
     payer: '', payMethod: '', insurer: '', insuranceCardNo: '',
@@ -54,6 +55,15 @@ export const SYMPTOMS: string[] = [
   'Stomach Pain', 'Vomiting', 'Diarrhea', 'Dizziness',
   'Back Pain', 'Joint Pain', 'Fatigue', 'Skin Rash',
   'Vision Issue', 'Hearing Issue', 'Swallowing Pain', 'Injury',
+]
+
+export interface DurationOption { value: string; label: string }
+export const DURATION_OPTIONS: DurationOption[] = [
+  { value: 'today', label: '< 1 day' },
+  { value: '1-3d', label: '1–3 days' },
+  { value: '4-7d', label: '4–7 days' },
+  { value: '1w+', label: '> 1 week' },
+  { value: '1m+', label: '> 1 month' },
 ]
 
 export const DEPARTMENTS: string[] = [
@@ -119,24 +129,45 @@ export function suggestDepartments(symptoms: string[]): string[] {
 // ── Triage scoring ───────────────────────────────────────────────────
 export type TriageVariant = 'success' | 'warning' | 'orange' | 'danger'
 
-export function triageScore(symptoms: string[]): { level: TriageLevel; color: string; variant: TriageVariant } {
-  const critical = ['Chest Pain', 'Breathlessness', 'Swallowing Pain']
-  const high = ['Fever', 'Dizziness', 'Stomach Pain', 'Vision Issue', 'Injury', 'Vomiting']
-  if (symptoms.some(s => critical.includes(s))) return { level: 'Critical', color: 'text-red-600', variant: 'danger' }
-  if (symptoms.filter(s => high.includes(s)).length >= 2) return { level: 'High', color: 'text-orange-600', variant: 'orange' }
+export function triageScore(
+  symptoms: string[],
+  durations: Record<string, string> = {},
+): { level: TriageLevel; color: string; variant: TriageVariant } {
+  const criticalList = ['Chest Pain', 'Breathlessness', 'Swallowing Pain']
+  const highList = ['Fever', 'Dizziness', 'Stomach Pain', 'Vision Issue', 'Injury', 'Vomiting']
+
+  const isLong = (s: string) => ['4-7d', '1w+', '1m+'].includes(durations[s] ?? '')
+  const isVeryLong = (s: string) => ['1w+', '1m+'].includes(durations[s] ?? '')
+
+  const hasCritical = symptoms.some(s => criticalList.includes(s))
+  const highCount = symptoms.filter(s => highList.includes(s)).length
+  const anyHighLingering = symptoms.some(s => highList.includes(s) && isLong(s))
+
+  // Critical: any critical symptom, OR fever persisting > 1 week
+  if (hasCritical) return { level: 'Critical', color: 'text-red-600', variant: 'danger' }
+  if (symptoms.includes('Fever') && isVeryLong('Fever')) return { level: 'Critical', color: 'text-red-600', variant: 'danger' }
+
+  // High: 2+ high-risk symptoms, OR single high-risk lingering, OR 5+ symptoms total
+  if (highCount >= 2) return { level: 'High', color: 'text-orange-600', variant: 'orange' }
+  if (anyHighLingering) return { level: 'High', color: 'text-orange-600', variant: 'orange' }
+  if (symptoms.length >= 5) return { level: 'High', color: 'text-orange-600', variant: 'orange' }
+
+  // Medium: 3+ symptoms or any high-risk symptom present
   if (symptoms.length >= 3) return { level: 'Medium', color: 'text-amber-500', variant: 'warning' }
+  if (highCount >= 1) return { level: 'Medium', color: 'text-amber-500', variant: 'warning' }
+
   return { level: 'Low', color: 'text-green-500', variant: 'success' }
 }
 
 // ── Step flow configuration ──────────────────────────────────────────
 export type StepId =
   | 'welcome' | 'consultType' | 'method' | 'aadhaar' | 'voice'
-  | 'about' | 'symptoms' | 'department'
+  | 'about' | 'symptoms' | 'symptomDuration' | 'department'
   | 'slot' | 'reports' | 'family' | 'review' | 'payment' | 'success'
 
 export const STEP_ORDER: StepId[] = [
   'welcome', 'consultType', 'method', 'aadhaar', 'voice',
-  'about', 'symptoms',
+  'about', 'symptoms', 'symptomDuration', 'department',
   'slot', 'reports', 'family', 'review', 'payment', 'success',
 ]
 
@@ -158,7 +189,8 @@ export const STEP_TITLES: Record<StepId, string> = {
   voice: 'Tell us in your words',
   about: 'Your details',
   symptoms: 'Select your symptoms',
-  department: 'Which department?',
+  symptomDuration: 'How long have you had these?',
+  department: 'AI department recommendation',
   slot: 'Pick a time',
   reports: 'Bringing old reports?',
   family: 'Share live status with family?',
@@ -179,6 +211,7 @@ export function canContinue(id: StepId, form: IntakeForm): boolean {
         && form.gender !== ''
     }
     case 'symptoms': return form.symptoms.length > 0
+    case 'department': return form.departments.length > 0
     case 'slot': return !!form.slotDoctor && !!form.slotDate && !!form.slotTime
     case 'payment': return form.payer === 'cashless' ? form.insuranceVerified : (form.payer === 'self' && !!form.payMethod)
     default: return true // method/aadhaar/voice/reports/family/review

@@ -878,9 +878,13 @@ export const useLabOrdersStore = create<State>()(persist((set, get) => ({
   })),
 }),
   {
-    name: 'agentix-labordersstore', version: 2,
+    name: 'agentix-labordersstore', version: 4,
     storage: createJSONStorage(() => localStorage),
     skipHydration: true,
+    // Orders are intentionally excluded from persistence so that:
+    // (a) SEED_ORDERS always load on app start — no stale data can empty the phlebotomy queue
+    // (b) Doctor-added orders appear immediately in phlebotomy via the shared in-memory store
+    partialize: (state) => ({ reflexSuggestions: state.reflexSuggestions }),
   },
 ))
 

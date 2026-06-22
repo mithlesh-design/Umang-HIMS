@@ -18,6 +18,8 @@ import { MethodStep, AadhaarScanStep, VoiceStep } from "./CaptureSteps"
 import { AboutStep, ReportsStep, FamilyStep } from "./FieldSteps"
 import { ConsultTypeStep, SlotStep, PaymentStep } from "./ConsultSteps"
 import { ReviewStep, SuccessStep } from "./ReviewSuccess"
+import { DurationStep } from "./DurationStep"
+import { DepartmentStep } from "./DepartmentStep"
 
 export function IntakeFlow() {
   const { patients, addPatient, generateFamilyToken } = usePatientStore()
@@ -65,7 +67,7 @@ export function IntakeFlow() {
     const mode = form.consultationType === 'video' ? 'video' : 'in_person'
     const newToken = Math.max(...patients.map(p => p.token), 1000) + 1
     const newId = `PT-${Date.now()}`
-    const triage = triageScore(form.symptoms)
+    const triage = triageScore(form.symptoms, form.symptomDurations)
     const estWaitMins = (patients.filter(p => ['waiting', 'vitals'].includes(p.queueStatus)).length + 1) * 4
     addPatient({
       id: newId,
@@ -130,7 +132,7 @@ export function IntakeFlow() {
   }
 
   // ── Step body ───────────────────────────────────────────────────────
-  const triage = triageScore(form.symptoms)
+  const triage = triageScore(form.symptoms, form.symptomDurations)
   const renderBody = () => {
     switch (current) {
       case 'consultType': return <ConsultTypeStep form={form} update={update} />
@@ -150,6 +152,8 @@ export function IntakeFlow() {
         ) : null
         return <ChoiceStep fill columns={2} compact options={SYMPTOMS.map(s => ({ value: s, label: s }))} value={form.symptoms} onChange={v => update({ symptoms: v, departments: suggestDepartments(v) })} multi otherEnabled otherPlaceholder="Describe your problem…" footer={aiBar} />
       }
+      case 'symptomDuration': return <DurationStep symptoms={form.symptoms} durations={form.symptomDurations} onChange={d => update({ symptomDurations: d })} />
+      case 'department': return <DepartmentStep form={form} update={update} />
       case 'slot': return <SlotStep form={form} update={update} />
       case 'reports': return <ReportsStep form={form} update={update} />
       case 'family': return <FamilyStep form={form} update={update} />

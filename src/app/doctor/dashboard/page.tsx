@@ -391,7 +391,7 @@ export default function DoctorDashboard() {
   // Dispatches a single lab test immediately to the lab queue AND stages it in the
   // consultation store (marked sent to prevent double-dispatch via any legacy path).
   const dispatchLabOrder = (testName: string, priority: 'Routine' | 'Urgent') => {
-    if (!currentPatient) return
+    if (!currentPatient) { toast.error("Select a patient from the queue first"); return }
     addLabOrder({ testName, priority })
     // Zustand mutations are synchronous — getState() reflects the change immediately.
     const newId = useConsultationStore.getState().labOrders.slice(-1)[0]?.id
@@ -415,7 +415,7 @@ export default function DoctorDashboard() {
 
   // Same pattern for radiology.
   const dispatchRadOrder = (scanType: typeof radScanType, bodyPart: string, priority: 'Routine' | 'Urgent') => {
-    if (!currentPatient) return
+    if (!currentPatient) { toast.error("Select a patient from the queue first"); return }
     addRadiologyOrder({ scanType, bodyPart, priority })
     const newId = useConsultationStore.getState().radiologyOrders.slice(-1)[0]?.id
     if (newId) markRadiologyOrderSent(newId)
@@ -875,7 +875,7 @@ export default function DoctorDashboard() {
                     <option>Routine</option>
                     <option>Urgent</option>
                   </Select>
-                  <Button size="sm" variant="secondary" onClick={() => { if (!labTest) return; dispatchLabOrder(labTest, labPriority); setLabTest("") }}>
+                  <Button size="sm" variant="secondary" disabled={!labTest || !currentPatient} onClick={() => { dispatchLabOrder(labTest, labPriority); setLabTest("") }}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
