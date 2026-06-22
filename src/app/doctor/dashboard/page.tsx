@@ -32,7 +32,7 @@ import { OrderSetPicker } from "@/components/doctor/OrderSetPicker"
 import { materializeOrderSet, type OrderSetDef } from "@/lib/clinicalOrderSets"
 import type { Patient } from "@/store/usePatientStore"
 import { toast } from "sonner"
-import { isSpeechSupported, startDictation, toSOAP, type Recognition } from "@/lib/voiceScribe"
+import { isSpeechSupported, startDictation, startVoiceCommand, toSOAP, type Recognition } from "@/lib/voiceScribe"
 import { openPrint, olFrom, para } from "@/lib/printDoc"
 import { useDoctorProfileStore } from "@/store/useDoctorProfileStore"
 import { useHRStore } from "@/store/useHRStore"
@@ -194,6 +194,8 @@ export default function DoctorDashboard() {
   const [refSpecialty, setRefSpecialty] = useState("")
   const [refNotes, setRefNotes] = useState("")
   const [refUrgent, setRefUrgent] = useState(false)
+  const [refListening, setRefListening] = useState(false)
+  const refRecRef = useRef<Recognition | null>(null)
   const [admType, setAdmType] = useState<'General Ward' | 'ICU' | 'Private Room' | 'Semi-Private' | 'Day Care'>("General Ward")
   const [admReason, setAdmReason] = useState("")
   const [showAdmModal, setShowAdmModal] = useState(false)
@@ -966,14 +968,41 @@ export default function DoctorDashboard() {
                     <span className="text-xs font-semibold text-red-600">Urgent</span>
                   </label>
                 </div>
-                <textarea
-                  value={refNotes}
-                  onChange={e => setRefNotes(e.target.value)}
-                  placeholder="Referral notes for specialist..."
-                  rows={2}
-                  className={selectStyle}
-                  style={{ ...selectInlineStyle, resize: 'none' }}
-                />
+                <div className="relative">
+                  <textarea
+                    value={refNotes}
+                    onChange={e => setRefNotes(e.target.value)}
+                    placeholder={refListening ? "Listening…" : "Referral notes for specialist..."}
+                    rows={2}
+                    className={selectStyle}
+                    style={{ ...selectInlineStyle, resize: 'none', paddingRight: '2.5rem' }}
+                  />
+                  {speechOk && (
+                    <button
+                      type="button"
+                      aria-label={refListening ? "Stop voice input" : "Dictate referral notes"}
+                      aria-pressed={refListening}
+                      onClick={() => {
+                        if (refListening) { refRecRef.current?.stop(); return }
+                        refRecRef.current = startVoiceCommand({
+                          onPartial: t => setRefNotes(t),
+                          onFinal:   t => setRefNotes(t),
+                          onEnd:   () => { setRefListening(false); refRecRef.current = null },
+                          onError: () => { setRefListening(false); refRecRef.current = null },
+                        })
+                        if (refRecRef.current) setRefListening(true)
+                      }}
+                      className={cn(
+                        "absolute right-2 top-2 h-7 w-7 rounded-full flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E7490]",
+                        refListening
+                          ? "bg-[#0E7490] text-white animate-pulse"
+                          : "bg-[rgba(14,116,144,0.08)] text-[#0E7490] hover:bg-[rgba(14,116,144,0.18)]"
+                      )}
+                    >
+                      <Mic className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
                 <Button size="sm" variant="secondary" className="gap-2" onClick={() => {
                   if (!refSpecialty) return
                   addReferral({ specialty: refSpecialty, notes: refNotes, urgent: refUrgent })
