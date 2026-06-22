@@ -42,7 +42,7 @@ const DRUGS = ["Paracetamol 500mg","Amoxicillin 500mg","Azithromycin 500mg","Cet
 // Lab tests come straight from the central catalog so every doctor-selected
 // name round-trips to a valid TestRun (no silent fallbacks at the shim).
 const LAB_TESTS = Object.values(LAB_CATALOG).map(e => e.name)
-const SPECIALTIES = ["Cardiology","Neurology","Orthopaedics","Gastroenterology","Pulmonology","Nephrology","Oncology","Endocrinology","Dermatology","Psychiatry","ENT","Ophthalmology","Urology"]
+const SPECIALTIES = ["Cardiology","Neurology","Orthopaedics","Gastroenterology","Pulmonology","Nephrology","Oncology","Endocrinology","Dermatology","Psychiatry","ENT","Ophthalmology","Urology","Internal Medicine"]
 const BODY_PARTS = ["Chest","Abdomen","Head","Neck","Spine (Lumbar)","Spine (Cervical)","Knee","Shoulder","Hip","Pelvis","Wrist","Ankle","Whole Abdomen"]
 
 const TRIAGE_GRADIENTS: Record<string, { gradient: string; shadow: string }> = {
