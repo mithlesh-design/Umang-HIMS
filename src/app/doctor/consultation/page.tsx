@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Stethoscope, Pill, FlaskConical, ScanLine, ArrowLeft, Save, Sparkles, FileText, Send, Plus, X } from "lucide-react"
+import { Stethoscope, Pill, FlaskConical, ScanLine, ArrowLeft, Save, Sparkles, FileText, Send, Plus, X, Activity, AlertTriangle } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { usePatientStore } from "@/store/usePatientStore"
 import { useLabOrdersStore } from "@/store/useLabOrdersStore"
@@ -19,6 +19,8 @@ import { LAB_CATALOG } from "@/lib/labCatalog"
 import { Select } from "@/components/ui/Select"
 import { toast } from "sonner"
 import { notifyAndAudit } from "@/lib/notifyAndAudit"
+import { news2FromRecord, vitalsAnomalies } from "@/lib/vitals"
+import { cn } from "@/lib/utils"
 
 const LAB_OPTIONS = Object.values(LAB_CATALOG).map(e => ({ code: e.code, name: e.name }))
 
@@ -150,6 +152,33 @@ export default function DoctorConsultation() {
 
   if (!hydrated) return null
 
+  // Vitals — prefer the comprehensive OPD VitalsRecord (nurse M2 form), fall back
+  // to simple string vitals from intake, or show a "not recorded" warning.
+  const opdV = active.opdVitals ?? null
+  const simpleV = active.vitals ?? null
+  const news2 = opdV ? news2FromRecord(opdV) : null
+  const anomalies = opdV ? vitalsAnomalies(opdV) : []
+
+  const vitalsTimeAgo = (iso: string) => {
+    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    return `${Math.round(mins / 60)}h ago`
+  }
+
+  // Build an array of vital chips for the comprehensive record.
+  const opdChips = opdV ? [
+    { label: 'HR', value: opdV.hr != null ? `${opdV.hr} bpm` : '—', crit: opdV.hr != null && (opdV.hr < 50 || opdV.hr > 110), warn: opdV.hr != null && (opdV.hr < 60 || opdV.hr > 100) },
+    { label: 'BP', value: opdV.systolicBP != null ? `${opdV.systolicBP}/${opdV.diastolicBP ?? '?'} mmHg` : '—', crit: opdV.systolicBP != null && (opdV.systolicBP < 90 || opdV.systolicBP >= 180), warn: opdV.systolicBP != null && (opdV.systolicBP >= 140 || opdV.systolicBP < 100) },
+    { label: 'RR', value: opdV.rr != null ? `${opdV.rr} /min` : '—', crit: opdV.rr != null && (opdV.rr < 8 || opdV.rr >= 30), warn: opdV.rr != null && (opdV.rr <= 11 || opdV.rr >= 25) },
+    { label: 'SpO₂', value: opdV.spo2 != null ? `${opdV.spo2}%` : '—', crit: opdV.spo2 != null && opdV.spo2 < 92, warn: opdV.spo2 != null && opdV.spo2 < 95 },
+    { label: 'Temp', value: opdV.temp != null ? `${opdV.temp}°F` : '—', crit: opdV.temp != null && (opdV.temp < 95 || opdV.temp >= 104), warn: opdV.temp != null && opdV.temp >= 100.4 },
+    ...(opdV.pain != null ? [{ label: 'Pain', value: `${opdV.pain}/10`, crit: false, warn: opdV.pain >= 7 }] : []),
+    ...(opdV.bloodGlucose != null ? [{ label: 'Glucose', value: `${opdV.bloodGlucose} mg/dL`, crit: opdV.bloodGlucose < 54 || opdV.bloodGlucose > 400, warn: opdV.bloodGlucose < 70 || opdV.bloodGlucose > 300 }] : []),
+    ...(opdV.weight != null ? [{ label: 'Weight', value: `${opdV.weight} kg`, crit: false, warn: false }] : []),
+    ...(opdV.consciousness != null ? [{ label: 'AVPU', value: opdV.consciousness === 'A' ? 'Alert' : opdV.consciousness === 'V' ? 'Voice' : opdV.consciousness === 'P' ? 'Pain' : 'Unresponsive', crit: opdV.consciousness !== 'A', warn: false }] : []),
+  ] : []
+
   return (
     <div className="max-w-5xl mx-auto pb-10 space-y-4">
       {/* Patient header */}
@@ -168,6 +197,106 @@ export default function DoctorConsultation() {
         <span className="text-[10.5px] font-semibold text-[#0E7490] bg-[rgba(14,116,144,0.07)] border border-[rgba(14,116,144,0.15)] rounded-full px-2 py-0.5 inline-flex items-center gap-1">
           <Sparkles className="h-3 w-3" /> AI scribe ready
         </span>
+      </div>
+
+      {/* ── Vitals strip ──────────────────────────────────────────────────── */}
+      <div className="rounded-2xl bg-white shadow-[0_1px_4px_rgba(15,23,42,0.06)] p-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-[#0E7490]" />
+            <h3 className="text-[14px] font-semibold text-slate-900">Patient Vitals</h3>
+            {opdV?.at && (
+              <span className="text-[10.5px] text-slate-400">
+                recorded {vitalsTimeAgo(opdV.at)} · by {opdV.by}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {active.triageLevel && (
+              <span className={cn(
+                "text-[10.5px] font-bold px-2 py-0.5 rounded-full border",
+                active.triageLevel === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' :
+                active.triageLevel === 'High'     ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                active.triageLevel === 'Medium'   ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                    'bg-emerald-50 text-emerald-700 border-emerald-200'
+              )}>
+                Triage: {active.triageLevel}
+              </span>
+            )}
+            {news2 && (
+              <span className={cn(
+                "text-[10.5px] font-bold px-2 py-0.5 rounded-full border",
+                news2.band === 'high'   ? 'bg-red-50 text-red-700 border-red-200' :
+                news2.band === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                          'bg-emerald-50 text-emerald-700 border-emerald-200'
+              )}>
+                NEWS2 {news2.score} · {news2.band === 'high' ? 'High' : news2.band === 'medium' ? 'Medium' : 'Low'} risk
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* No vitals recorded yet */}
+        {!opdV && !simpleV && (
+          <div className="flex items-center gap-2 text-[12.5px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            Vitals not yet recorded — patient may still be in the vitals check stage.
+          </div>
+        )}
+
+        {/* Comprehensive OPD vitals (VitalsRecord from nurse M2 form) */}
+        {opdV && (
+          <>
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
+              {opdChips.map(chip => (
+                <div key={chip.label} className={cn(
+                  "rounded-lg p-2 text-center",
+                  chip.crit ? 'bg-red-50 ring-1 ring-red-200' :
+                  chip.warn ? 'bg-amber-50 ring-1 ring-amber-200' :
+                              'bg-slate-50'
+                )}>
+                  <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-500 mb-0.5">{chip.label}</p>
+                  <p className={cn(
+                    "text-[13px] font-bold leading-tight",
+                    chip.crit ? 'text-red-700' :
+                    chip.warn ? 'text-amber-700' :
+                                'text-slate-900'
+                  )}>{chip.value}</p>
+                </div>
+              ))}
+            </div>
+            {anomalies.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {anomalies.map((a, i) => (
+                  <span key={i} className={cn(
+                    "inline-flex items-center gap-1 text-[10.5px] font-medium px-2 py-0.5 rounded-full",
+                    a.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                  )}>
+                    <AlertTriangle className="h-3 w-3" /> {a.label}
+                  </span>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Simple intake vitals (bp / temp / weight / spo2 / pulse strings) */}
+        {simpleV && !opdV && (
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {[
+              { label: 'BP', value: simpleV.bp },
+              { label: 'Pulse', value: simpleV.pulse },
+              { label: 'SpO₂', value: simpleV.spo2 },
+              { label: 'Temp', value: simpleV.temp },
+              { label: 'Weight', value: simpleV.weight },
+            ].map(chip => (
+              <div key={chip.label} className="rounded-lg p-2 text-center bg-slate-50">
+                <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-500 mb-0.5">{chip.label}</p>
+                <p className="text-[13px] font-bold text-slate-900 leading-tight">{chip.value ?? '—'}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

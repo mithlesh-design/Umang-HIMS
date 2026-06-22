@@ -1,6 +1,7 @@
 "use client"
 import { Select } from "@/components/ui/Select"
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -195,6 +196,7 @@ export default function DoctorDashboard() {
   const [admSpecialInstructions, setAdmSpecialInstructions] = useState("")
   const [admUrgency, setAdmUrgency] = useState<'Routine' | 'Urgent' | 'Emergency'>("Urgent")
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [showRxDrawer, setShowRxDrawer] = useState(false)
 
   const patientVisits = currentPatient ? visits.filter(v => v.patientId === currentPatient.id).sort((a, b) => b.date.localeCompare(a.date)) : []
 
@@ -709,18 +711,33 @@ export default function DoctorDashboard() {
             <DoctorStockAlerts doctorName={currentUser?.name} />
 
             {/* Consultation action bar — advance the patient down the journey */}
-            <div className="flex items-center justify-between rounded-2xl px-5 py-3" style={{ background: 'white', boxShadow: '0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.04)' }}>
+            <div className="flex items-center justify-between rounded-2xl px-5 py-3 gap-3 flex-wrap" style={{ background: 'white', boxShadow: '0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.04)' }}>
               <span className="text-[13px] font-semibold flex items-center gap-2" style={{ color: '#64748B' }}>
                 {isOnlineConsult
                   ? <><Video className="h-4 w-4 text-[#0E7490]" /> In <b className="text-[#0E7490]">online</b> consultation with {currentPatient.name.split(' ')[0]}</>
                   : <><span className="h-2 w-2 rounded-full bg-[rgba(14,116,144,0.07)]0 animate-pulse" /> In consultation with {currentPatient.name.split(' ')[0]}</>}
                 <span className="ml-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Fee ₹{consultFee}</span>
               </span>
-              <button onClick={completeConsult}
-                className="h-9 px-4 rounded-xl font-bold text-[13px] text-white flex items-center gap-2 active:scale-[0.98] transition"
-                style={{ background: 'linear-gradient(135deg,#16A34A,#0B5A6E)', boxShadow: '0 4px 12px rgba(22,163,74,0.30)' }}>
-                <CheckCircle2 className="h-4 w-4" /> Complete consultation <ArrowRight className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setShowRxDrawer(true)}
+                  className="h-9 px-4 rounded-xl font-bold text-[13px] flex items-center gap-2 active:scale-[0.98] transition cursor-pointer"
+                  style={{ background: 'rgba(14,116,144,0.08)', color: '#0E7490', border: '1px solid rgba(14,116,144,0.18)' }}
+                >
+                  <Pill className="h-4 w-4" />
+                  Prescriptions
+                  {prescriptions.length > 0 && (
+                    <span className="h-5 min-w-[20px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center" style={{ background: '#0E7490', color: '#fff' }}>
+                      {prescriptions.length}
+                    </span>
+                  )}
+                </button>
+                <button onClick={completeConsult}
+                  className="h-9 px-4 rounded-xl font-bold text-[13px] text-white flex items-center gap-2 active:scale-[0.98] transition"
+                  style={{ background: 'linear-gradient(135deg,#16A34A,#0B5A6E)', boxShadow: '0 4px 12px rgba(22,163,74,0.30)' }}>
+                  <CheckCircle2 className="h-4 w-4" /> Complete consultation <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <AiPreBrief patient={currentPatient} />
@@ -1127,82 +1144,119 @@ export default function DoctorDashboard() {
 
           </div>
 
-          {/* ── Right Sidebar: AI + Rx ──────────────────── */}
-          <div className="w-full lg:w-72 flex-shrink-0 flex flex-col gap-4 lg:overflow-hidden">
-
-            {/* AI Assistant */}
+          {/* ── Right Sidebar: AI Assistant only ──────────── */}
+          <div className="w-full lg:w-64 flex-shrink-0 flex flex-col gap-4 lg:overflow-hidden">
             <div
-              className="rounded-2xl p-4"
+              className="flex-1 flex flex-col overflow-hidden rounded-2xl p-4"
               style={{
                 background: 'linear-gradient(135deg, rgba(14,116,144,0.06) 0%, rgba(14,116,144,0.03) 100%)',
                 border: '1px solid rgba(14,116,144,0.10)',
                 boxShadow: '0 4px 16px rgba(14,116,144,0.10)',
               }}
             >
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
                 <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0B5A6E,#0E7490)', boxShadow: '0 3px 8px rgba(14,116,144,0.30)' }}>
                   <Bot className="h-3.5 w-3.5 text-white" />
                 </div>
                 <span className="font-bold text-sm text-[#0F172A]">AI Assistant</span>
                 <span className="ai-badge ml-auto">AI</span>
               </div>
-              <AnimatePresence>
-                {aiSuggestions.map((s, idx) => (
-                  <motion.button
-                    key={s}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: idx * 0.1 }}
-                    onClick={() => acceptAISuggestion(s)}
-                    className="w-full text-left text-xs rounded-xl p-3 mb-2 flex items-center justify-between group cursor-pointer transition-all"
-                    style={{
-                      background: 'rgba(255,255,255,0.7)',
-                      color: '#0B5A6E',
-                      boxShadow: '0 1px 4px rgba(14,116,144,0.10)',
-                    }}
-                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(14,116,144,0.20)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 4px rgba(14,116,144,0.10)'}
-                  >
-                    <span className="font-semibold leading-tight pr-2">{s}</span>
-                    <Plus className="h-3.5 w-3.5 flex-shrink-0 opacity-60 group-hover:opacity-100" />
-                  </motion.button>
-                ))}
-              </AnimatePresence>
-              {aiSuggestions.length === 0 && (
-                <div className="text-center py-3">
-                  <CheckCircle2 className="h-5 w-5 mx-auto mb-1" style={{ color: '#6EC9DC' }} />
-                  <p className="text-xs font-medium" style={{ color: '#9CA3AF' }}>No new suggestions</p>
-                </div>
-              )}
-            </div>
-
-            {/* Prescriptions */}
-            <div
-              className="flex-1 flex flex-col overflow-hidden rounded-2xl"
-              style={{ background: 'white', boxShadow: '0 1px 4px rgba(15,23,42,0.06), 0 8px 32px rgba(15,23,42,0.06)' }}
-            >
-              <div className="p-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(15,23,42,0.05)' }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0E7490,#0E7490)', boxShadow: '0 3px 8px rgba(14,116,144,0.25)' }}>
-                    <Pill className="h-3.5 w-3.5 text-white" />
+              <div className="flex-1 overflow-y-auto space-y-2">
+                <AnimatePresence>
+                  {aiSuggestions.map((s, idx) => (
+                    <motion.button
+                      key={s}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: idx * 0.1 }}
+                      onClick={() => acceptAISuggestion(s)}
+                      className="w-full text-left text-xs rounded-xl p-3 flex items-center justify-between group cursor-pointer transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.7)',
+                        color: '#0B5A6E',
+                        boxShadow: '0 1px 4px rgba(14,116,144,0.10)',
+                      }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(14,116,144,0.20)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 4px rgba(14,116,144,0.10)'}
+                    >
+                      <span className="font-semibold leading-tight pr-2">{s}</span>
+                      <Plus className="h-3.5 w-3.5 flex-shrink-0 opacity-60 group-hover:opacity-100" />
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
+                {aiSuggestions.length === 0 && (
+                  <div className="text-center py-3">
+                    <CheckCircle2 className="h-5 w-5 mx-auto mb-1" style={{ color: '#6EC9DC' }} />
+                    <p className="text-xs font-medium" style={{ color: '#9CA3AF' }}>No new suggestions</p>
                   </div>
-                  <span className="font-bold text-sm text-[#0F172A]">Prescriptions</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {dialogView}
+
+      {/* ── Prescriptions Slide Drawer ──────────────────────────────── */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+        {showRxDrawer && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40"
+              style={{ background: 'rgba(15,23,42,0.35)', backdropFilter: 'blur(2px)' }}
+              onClick={() => setShowRxDrawer(false)}
+            />
+
+            {/* Drawer panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed top-0 right-0 bottom-0 z-50 flex flex-col w-full max-w-sm"
+              style={{ background: 'white', boxShadow: '-8px 0 40px rgba(15,23,42,0.18)' }}
+            >
+              {/* Drawer header */}
+              <div className="flex-shrink-0 flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(15,23,42,0.06)', background: 'linear-gradient(135deg,rgba(14,116,144,0.07),rgba(14,116,144,0.03))' }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0E7490,#0B5A6E)', boxShadow: '0 3px 8px rgba(14,116,144,0.30)' }}>
+                    <Pill className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-[15px] font-bold text-[#0F172A]">Prescriptions</span>
                   {prescriptions.length > 0 && (
-                    <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(14,116,144,0.10)', color: '#0E7490' }}>
+                    <span className="h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center" style={{ background: 'rgba(14,116,144,0.12)', color: '#0E7490' }}>
                       {prescriptions.length}
                     </span>
                   )}
                 </div>
+                <button
+                  onClick={() => setShowRxDrawer(false)}
+                  className="h-8 w-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
+                  style={{ background: 'rgba(15,23,42,0.06)', color: '#64748B' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(15,23,42,0.10)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(15,23,42,0.06)'}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
+              {/* Add medicine form */}
+              <div className="flex-shrink-0 px-5 py-4" style={{ borderBottom: '1px solid rgba(15,23,42,0.06)' }}>
                 {diagnosis && prescriptions.length === 0 && (
                   <div className="mb-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1" style={{ color: '#0B5A6E' }}>
                       <Sparkles className="h-3 w-3" /> AI Suggests
                     </p>
-                    <div className="flex flex-wrap gap-1">
-                      {['Paracetamol 500mg','Amoxicillin 500mg','Pantoprazole 40mg'].map(drug => (
-                        <button key={drug} onClick={() => addMed(drug)} className="text-[10px] font-semibold px-2 py-1 rounded-full cursor-pointer transition-all" style={{ background: 'rgba(14,116,144,0.25)', color: '#0B5A6E' }}>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Paracetamol 500mg', 'Amoxicillin 500mg', 'Pantoprazole 40mg'].map(drug => (
+                        <button key={drug} onClick={() => addMed(drug)} className="text-[10.5px] font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-all" style={{ background: 'rgba(14,116,144,0.12)', color: '#0B5A6E' }}>
                           + {drug}
                         </button>
                       ))}
@@ -1210,6 +1264,7 @@ export default function DoctorDashboard() {
                   </div>
                 )}
 
+                {/* Search + autocomplete */}
                 <div className="relative mb-3">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -1218,11 +1273,11 @@ export default function DoctorDashboard() {
                         placeholder="Search medicine..."
                         value={medSearch}
                         onChange={e => { setMedSearch(e.target.value); setShowDrugs(true) }}
-                        onKeyDown={e => e.key === "Enter" && addMed(medSearch)}
-                        className="pl-9 h-9"
+                        onKeyDown={e => e.key === 'Enter' && addMed(medSearch)}
+                        className="pl-9 h-10"
                       />
                     </div>
-                    <Button onClick={() => addMed(medSearch)} size="sm">Add</Button>
+                    <Button onClick={() => addMed(medSearch)} size="sm" className="h-10 px-4">Add</Button>
                   </div>
                   <AnimatePresence>
                     {showDrugs && filtered.length > 0 && (
@@ -1233,11 +1288,11 @@ export default function DoctorDashboard() {
                         className="absolute top-full mt-1 left-0 right-0 z-20 rounded-xl bg-white overflow-hidden"
                         style={{ boxShadow: '0 8px 24px rgba(15,23,42,0.14)' }}
                       >
-                        {filtered.slice(0, 5).map(d => (
+                        {filtered.slice(0, 6).map(d => (
                           <button
                             key={d}
                             onClick={() => { setMedSearch(d); setShowDrugs(false) }}
-                            className="w-full text-left text-xs px-4 py-2.5 text-[#334155] font-medium transition-colors cursor-pointer"
+                            className="w-full text-left text-sm px-4 py-2.5 text-[#334155] font-medium transition-colors cursor-pointer"
                             style={{ borderBottom: '1px solid rgba(15,23,42,0.04)' }}
                             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#F8FAFC'}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'white'}
@@ -1250,67 +1305,87 @@ export default function DoctorDashboard() {
                   </AnimatePresence>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Dosage fields — 2×2 grid */}
+                <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { label: "Dosage",   value: dosage,    setter: setDosage,    p: "1-0-1" },
-                    { label: "Duration", value: duration,  setter: setDuration,  p: "5 days" },
-                    { label: "Freq",     value: frequency, setter: setFrequency, p: "TDS" },
-                    { label: "Qty",      value: qty,       setter: setQty,       p: "10" },
+                    { label: 'Dosage',   value: dosage,    setter: setDosage,    p: '1-0-1' },
+                    { label: 'Duration', value: duration,  setter: setDuration,  p: '5 days' },
+                    { label: 'Freq',     value: frequency, setter: setFrequency, p: 'TDS' },
+                    { label: 'Qty',      value: qty,       setter: setQty,       p: '10' },
                   ].map(({ label, value, setter, p }) => (
                     <div key={label}>
-                      <label className="block text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94A3B8' }}>{label}</label>
-                      <Input value={value} onChange={e => setter(e.target.value)} placeholder={p} className="h-7 text-xs px-2" />
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94A3B8' }}>{label}</label>
+                      <Input value={value} onChange={e => setter(e.target.value)} placeholder={p} className="h-8 text-sm" />
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex-1 min-h-[200px] lg:min-h-0 overflow-y-auto p-3 space-y-2" style={{ background: '#F8FAFC' }}>
+              {/* Medicine list — fills all remaining height, scrollable */}
+              <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2" style={{ background: '#F8FAFC' }}>
+                {prescriptions.length > 0 && (
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94A3B8' }}>
+                    Added Medicines
+                  </p>
+                )}
                 <AnimatePresence>
                   {prescriptions.map(p => (
                     <motion.div
                       key={p.id}
-                      initial={{ opacity: 0, x: 10 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="flex items-start justify-between p-3 rounded-xl"
-                      style={{ background: 'white', boxShadow: '0 1px 3px rgba(15,23,42,0.06)' }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.18 }}
+                      className="flex items-start justify-between p-3.5 rounded-xl"
+                      style={{ background: 'white', boxShadow: '0 1px 4px rgba(15,23,42,0.06)' }}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-[#0F172A] truncate">{p.medicine}</p>
-                        <p className="text-[10px] font-medium mt-0.5" style={{ color: '#94A3B8' }}>{p.dosage} · {p.duration} · {p.instructions}</p>
+                        <p className="text-[13px] font-bold text-[#0F172A] truncate">{p.medicine}</p>
+                        <p className="text-[11px] font-medium mt-0.5" style={{ color: '#94A3B8' }}>
+                          {p.dosage} · {p.duration} · {p.instructions}
+                        </p>
                       </div>
-                      <button onClick={() => removePrescription(p.id)} className="p-1 rounded-lg transition-colors flex-shrink-0 cursor-pointer" style={{ color: '#94A3B8' }}>
-                        <X className="h-3.5 w-3.5" />
+                      <button
+                        onClick={() => removePrescription(p.id)}
+                        className="p-1.5 rounded-lg ml-2 flex-shrink-0 cursor-pointer transition-colors"
+                        style={{ color: '#CBD5E1' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#EF4444'}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1'}
+                      >
+                        <X className="h-4 w-4" />
                       </button>
                     </motion.div>
                   ))}
                 </AnimatePresence>
                 {prescriptions.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-24 gap-2 opacity-50">
-                    <Pill className="h-6 w-6" style={{ color: '#CBD5E1' }} />
-                    <p className="text-xs font-medium" style={{ color: '#94A3B8' }}>No medicines added</p>
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 opacity-40">
+                    <Pill className="h-10 w-10" style={{ color: '#CBD5E1' }} />
+                    <p className="text-[13px] font-medium" style={{ color: '#94A3B8' }}>No medicines added yet</p>
                   </div>
                 )}
               </div>
 
-              <div className="p-3 flex-shrink-0 space-y-2" style={{ borderTop: '1px solid rgba(15,23,42,0.05)' }}>
+              {/* Footer — always pinned to bottom */}
+              <div className="flex-shrink-0 px-5 py-4 space-y-2.5" style={{ borderTop: '1px solid rgba(15,23,42,0.06)', background: 'white' }}>
                 {prescriptions.length > 0 && (
-                  <button onClick={printRx} className="w-full h-9 rounded-xl font-bold text-[12.5px] flex items-center justify-center gap-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
-                    <FileText className="h-3.5 w-3.5" /> Print / Export prescription
+                  <button
+                    onClick={printRx}
+                    className="w-full h-10 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    style={{ background: '#F1F5F9', color: '#64748B' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#E2E8F0'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#F1F5F9'}
+                  >
+                    <FileText className="h-4 w-4" /> Print / Export Prescription
                   </button>
                 )}
                 <button
-                  onClick={sendRx}
+                  onClick={() => { sendRx(); setShowRxDrawer(false) }}
                   disabled={prescriptions.length === 0 || isPharmacySent}
-                  className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 text-white transition-all cursor-pointer disabled:opacity-50"
-                  style={isPharmacySent ? {
-                    background: 'linear-gradient(135deg,#16A34A,#0B5A6E)',
-                    boxShadow: '0 4px 12px rgba(22,163,74,0.30)',
-                  } : {
-                    background: 'linear-gradient(135deg,#0E7490,#0E7490)',
-                    boxShadow: '0 4px 12px rgba(14,116,144,0.30)',
-                  }}
+                  className="w-full h-11 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 text-white transition-all cursor-pointer disabled:opacity-50"
+                  style={isPharmacySent
+                    ? { background: 'linear-gradient(135deg,#16A34A,#0B5A6E)', boxShadow: '0 4px 14px rgba(22,163,74,0.30)' }
+                    : { background: 'linear-gradient(135deg,#0E7490,#0B5A6E)', boxShadow: '0 4px 14px rgba(14,116,144,0.30)' }
+                  }
                 >
                   {isPharmacySent
                     ? <><CheckCircle2 className="h-4 w-4" /> Sent to Pharmacy</>
@@ -1318,15 +1393,15 @@ export default function DoctorDashboard() {
                   }
                 </button>
                 {isPharmacySent && (
-                  <p className="text-center text-[10px] font-semibold text-green-600 mt-2">Pharmacy is preparing medicines</p>
+                  <p className="text-center text-[11px] font-semibold text-green-600">Pharmacy is preparing medicines</p>
                 )}
               </div>
-            </div>
-
-          </div>
-        </div>
+            </motion.div>
+          </>
+        )}
+        </AnimatePresence>,
+        document.body
       )}
-      {dialogView}
     </div>
   )
 }

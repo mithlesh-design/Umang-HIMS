@@ -113,6 +113,7 @@ export default function LabOverview() {
         tatBreaches: tatBreaches.length,
       },
       pipeline, criticalPendingCallback, entered, techLoad, overOverdue, repeatCriticals,
+      awaiting,
     }
   }, [orders])
 
@@ -220,6 +221,60 @@ export default function LabOverview() {
             ) : null}
           </div>
         ))}
+      </div>
+
+      {/* Incoming requests — all awaiting-collection tests (OPD / IPD / ER / ICU / OT).
+          This is the primary "new work" signal for lab staff: every test a doctor
+          orders lands here until the phlebotomist collects the specimen. */}
+      <div className="bg-white rounded-xl border border-amber-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-amber-100 bg-amber-50 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-bold text-amber-800">Incoming requests · awaiting collection</h2>
+            <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5">{m.awaiting.length}</span>
+          </div>
+          <Link href="/lab/phlebotomy" className="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1">
+            Open Phlebotomy queue <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        {m.awaiting.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-slate-400 text-center">No pending collection requests. ✓</p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {m.awaiting.slice(0, 10).map(({ order, test }) => (
+              <div key={test.id} className="px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold">{order.patientName}</span>
+                    <span className="text-[10.5px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{test.name}</span>
+                    <span className={cn(
+                      "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                      order.source === 'OPD' ? 'bg-blue-100 text-blue-700' :
+                      order.source === 'ER'  ? 'bg-red-100 text-red-700' :
+                      order.source === 'ICU' ? 'bg-purple-100 text-purple-700' :
+                      order.source === 'OT'  ? 'bg-orange-100 text-orange-700' :
+                      'bg-slate-100 text-slate-600'
+                    )}>{order.source}</span>
+                    {test.priority !== 'Routine' && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700">{test.priority}</span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {order.doctorName} · {test.bench} bench · ordered {timeAgo(test.orderedAt)}
+                    {order.wardBed ? ` · ${order.wardBed}` : ''}
+                  </p>
+                </div>
+                <span className="text-[10px] text-slate-400 shrink-0">#{order.id}</span>
+              </div>
+            ))}
+            {m.awaiting.length > 10 && (
+              <p className="px-4 py-2 text-xs text-slate-400">
+                +{m.awaiting.length - 10} more ·{' '}
+                <Link href="/lab/phlebotomy" className="font-bold text-[#0E7490] hover:underline">view all in phlebotomy queue</Link>
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
