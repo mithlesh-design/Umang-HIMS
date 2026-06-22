@@ -662,7 +662,7 @@ export default function DoctorDashboard() {
         <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:overflow-hidden min-w-0">
 
           {/* Consultation Notes & Orders */}
-          <div className="flex-1 overflow-y-auto space-y-4 min-w-0">
+          <div className="flex-1 overflow-y-auto space-y-4 min-w-0 pr-2">
 
             {/* Patient Header */}
             <div
