@@ -10,6 +10,9 @@ export function isSpeechSupported(): boolean {
 
 export type Recognition = { stop: () => void }
 
+const browserLang = () =>
+  typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-US'
+
 // Starts continuous dictation; `onText` receives finalised chunks. Returns a
 // handle to stop, or null if unsupported / failed to start.
 export function startDictation(onText: (chunk: string) => void, onEnd: () => void): Recognition | null {
@@ -19,7 +22,7 @@ export function startDictation(onText: (chunk: string) => void, onEnd: () => voi
   try { rec = new SR() } catch { return null }
   rec.continuous = true
   rec.interimResults = false
-  rec.lang = 'en-IN'
+  rec.lang = browserLang()
   rec.onresult = (e: any) => {
     let text = ''
     for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -51,7 +54,7 @@ export function startVoiceCommand(opts: {
   try { rec = new SR() } catch { opts.onError?.('init-failed'); return null }
   rec.continuous = false
   rec.interimResults = true
-  rec.lang = opts.lang ?? 'en-IN'
+  rec.lang = opts.lang ?? browserLang()
   let finalText = ''
   rec.onresult = (e: any) => {
     let interim = ''

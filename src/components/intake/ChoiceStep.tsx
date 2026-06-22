@@ -6,6 +6,7 @@ import { Plus, Mic } from "lucide-react"
 import type { Choice } from "@/lib/intake/data"
 import { cn } from "@/lib/utils"
 import { isSpeechSupported, startVoiceCommand, type Recognition } from "@/lib/voiceScribe"
+import { toast } from "sonner"
 
 interface Props {
   options: Choice[]
@@ -43,8 +44,12 @@ export function ChoiceStep({
   // Voice dictation for the "Other" field — reuses the shared Web Speech helper.
   const [listening, setListening] = useState(false)
   const recRef = useRef<Recognition | null>(null)
-  const voiceSupported = isSpeechSupported()
-  useEffect(() => () => recRef.current?.stop(), [])
+  // Detect speech support only on the client to avoid SSR hydration mismatch.
+  const [voiceSupported, setVoiceSupported] = useState(false)
+  useEffect(() => {
+    setVoiceSupported(isSpeechSupported())
+    return () => { recRef.current?.stop() }
+  }, [])
 
   const commit = (nextKnown: string[], otherOn: boolean, text: string) => {
     onChange(otherOn && text.trim() ? [...nextKnown, text.trim()] : nextKnown)
@@ -69,11 +74,16 @@ export function ChoiceStep({
     if (listening) { recRef.current?.stop(); return }
     recRef.current = startVoiceCommand({
       onPartial: onOtherText,
-      onFinal: onOtherText,
-      onEnd: () => { setListening(false); recRef.current = null },
-      onError: () => { setListening(false); recRef.current = null },
+      onFinal:   onOtherText,
+      onEnd:   () => { setListening(false); recRef.current = null },
+      onError: (err) => {
+        setListening(false); recRef.current = null
+        if (err === 'not-allowed') toast.error('Microphone permission denied — allow it in browser settings')
+        else if (err !== 'no-speech') toast.error('Voice input failed — please try again')
+      },
     })
     if (recRef.current) setListening(true)
+    else toast.error('Could not start voice input — check microphone permissions')
   }
 
   const chipCls = (sel: boolean) => cn(

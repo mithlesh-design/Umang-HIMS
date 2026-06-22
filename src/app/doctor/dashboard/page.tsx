@@ -196,6 +196,7 @@ export default function DoctorDashboard() {
   const [refUrgent, setRefUrgent] = useState(false)
   const [refListening, setRefListening] = useState(false)
   const refRecRef = useRef<Recognition | null>(null)
+  useEffect(() => () => { refRecRef.current?.stop() }, [])
   const [admType, setAdmType] = useState<'General Ward' | 'ICU' | 'Private Room' | 'Semi-Private' | 'Day Care'>("General Ward")
   const [admReason, setAdmReason] = useState("")
   const [showAdmModal, setShowAdmModal] = useState(false)
@@ -984,13 +985,19 @@ export default function DoctorDashboard() {
                       aria-pressed={refListening}
                       onClick={() => {
                         if (refListening) { refRecRef.current?.stop(); return }
+                        const base = refNotes.trim()
                         refRecRef.current = startVoiceCommand({
-                          onPartial: t => setRefNotes(t),
-                          onFinal:   t => setRefNotes(t),
+                          onPartial: t => setRefNotes(base ? base + ' ' + t : t),
+                          onFinal:   t => setRefNotes(base ? base + ' ' + t : t),
                           onEnd:   () => { setRefListening(false); refRecRef.current = null },
-                          onError: () => { setRefListening(false); refRecRef.current = null },
+                          onError: (err) => {
+                            setRefListening(false); refRecRef.current = null
+                            if (err === 'not-allowed') toast.error('Microphone permission denied — allow it in browser settings')
+                            else if (err !== 'no-speech') toast.error('Voice input failed — please try again')
+                          },
                         })
                         if (refRecRef.current) setRefListening(true)
+                        else toast.error('Could not start voice input — check microphone permissions')
                       }}
                       className={cn(
                         "absolute right-2 top-2 h-7 w-7 rounded-full flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E7490]",
