@@ -17,54 +17,58 @@ export function AiCompanionBar() {
   const [text, setText] = useState("")
 
   return (
-    <div className="rounded-3xl p-[1.5px] bg-gradient-to-r from-[#0E7490] via-[#1E97B2] to-[#0E7490] shadow-[0_8px_28px_rgba(14,116,144,0.25)] overflow-hidden">
-      <div className="rounded-[22px] bg-white p-4 overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#0E7490] to-[#1E97B2] flex items-center justify-center flex-shrink-0">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold text-slate-900 leading-tight">Your AI Health Companion</p>
-            <p className="text-[12px] text-slate-400">Ask anything about your health, reports, or visit</p>
-          </div>
+    <div
+      className="rounded-3xl shadow-[0_8px_28px_rgba(14,116,144,0.25)] p-4"
+      style={{
+        background: 'linear-gradient(#fff,#fff) padding-box, linear-gradient(to right,#0E7490,#1E97B2,#0E7490) border-box',
+        border: '1.5px solid transparent',
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#0E7490] to-[#1E97B2] flex items-center justify-center flex-shrink-0">
+          <Sparkles className="h-5 w-5 text-white" />
         </div>
-
-        <div className="mt-3 flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 h-12 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-400 transition-shadow">
-          <input
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Ask about your health…"
-            aria-label="Ask the AI health companion"
-            className="intake-input flex-1 bg-transparent border-none text-[15px] text-slate-900 placeholder:text-slate-400"
-          />
-          <button aria-label="Speak" className="h-8 w-8 rounded-full flex items-center justify-center text-slate-400 hover:text-[#0E7490] hover:bg-[rgba(14,116,144,0.10)] transition-colors"><Mic className="h-4.5 w-4.5" /></button>
-          <button aria-label="Send" className="h-8 w-8 rounded-full bg-[#0E7490] text-white flex items-center justify-center active:scale-95 transition-transform"><ArrowUp className="h-4.5 w-4.5" /></button>
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-bold text-slate-900 leading-tight">Your AI Health Companion</p>
+          <p className="text-[12px] text-slate-400">Ask anything about your health, reports, or visit</p>
         </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s, i) => (
-            <button key={s.q} onClick={() => setActive(active === i ? null : i)}
-              className={cn("text-[13px] font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95",
-                active === i ? "bg-[#0E7490] border-[#0E7490] text-white" : "bg-white border-slate-200 text-slate-600 hover:border-[rgba(14,116,144,0.30)]")}>
-              {s.q}
-            </button>
-          ))}
-        </div>
-
-        <AnimatePresence>
-          {active !== null && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-              <div className="mt-3 rounded-2xl bg-[rgba(14,116,144,0.07)]/70 border border-[rgba(14,116,144,0.15)] p-4">
-                <p className="text-[14px] text-slate-800 leading-relaxed">{SUGGESTIONS[active].a}</p>
-                <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-slate-400">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[#0E7490]" />
-                  AI-generated for guidance · always verify with your doctor
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      <div className="mt-3 flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 h-12 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-400 transition-shadow">
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="Ask about your health…"
+          aria-label="Ask the AI health companion"
+          className="intake-input flex-1 bg-transparent border-none text-[15px] text-slate-900 placeholder:text-slate-400"
+        />
+        <button aria-label="Speak" className="h-8 w-8 rounded-full flex items-center justify-center text-slate-400 hover:text-[#0E7490] hover:bg-[rgba(14,116,144,0.10)] transition-colors"><Mic className="h-4.5 w-4.5" /></button>
+        <button aria-label="Send" className="h-8 w-8 rounded-full bg-[#0E7490] text-white flex items-center justify-center active:scale-95 transition-transform"><ArrowUp className="h-4.5 w-4.5" /></button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {SUGGESTIONS.map((s, i) => (
+          <button key={s.q} onClick={() => setActive(active === i ? null : i)}
+            className={cn("text-[13px] font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95",
+              active === i ? "bg-[#0E7490] border-[#0E7490] text-white" : "bg-white border-slate-200 text-slate-600 hover:border-[rgba(14,116,144,0.30)]")}>
+            {s.q}
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {active !== null && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <div className="mt-3 rounded-2xl bg-[rgba(14,116,144,0.07)]/70 border border-[rgba(14,116,144,0.15)] p-4">
+              <p className="text-[14px] text-slate-800 leading-relaxed">{SUGGESTIONS[active].a}</p>
+              <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-slate-400">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#0E7490]" />
+                AI-generated for guidance · always verify with your doctor
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
