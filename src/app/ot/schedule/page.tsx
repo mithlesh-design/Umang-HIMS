@@ -121,20 +121,24 @@ export default function OTSchedulePage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => {
-            printableHtml(`OT Schedule · ${new Date().toLocaleDateString('en-IN')}`, `
-              <div class="hdr"><div><h1>AGENTIX HIMS</h1><h2>OT Schedule · ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</h2></div></div>
+            printableHtml(`OT Schedule · ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`, `
+              <div class="info-row">
+                <div class="info-item"><span class="info-label">Procedures</span><span class="info-value">${sorted.length}</span></div>
+                <div class="info-item"><span class="info-label">Date</span><span class="info-value">${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+              </div>
+              <h3>Scheduled Procedures</h3>
               <table><thead><tr><th>Time</th><th>Room</th><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Anaesthetist</th><th>Status</th></tr></thead><tbody>
                 ${sorted.map(p => `<tr>
                   <td>${new Date(p.scheduledTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
                   <td>${p.otRoom}</td>
                   <td>${p.patientName} (${p.patientAge}y)</td>
-                  <td>${p.procedureName}${p.bloodRequired ? ' · BLOOD' : ''}</td>
+                  <td>${p.procedureName}${p.bloodRequired ? ' <b>· BLOOD REQ.</b>' : ''}</td>
                   <td>${p.surgeon}</td>
                   <td>${p.anaesthetist}</td>
                   <td>${p.status}</td>
                 </tr>`).join('')}
               </tbody></table>
-              <p style="font-size:12px;color:#64748b">${sorted.length} procedure(s) scheduled.</p>
+              <p class="muted">${sorted.length} procedure(s) scheduled. Printed from Umang HIMS OT Module.</p>
             `)
           }}>
             <Printer className="h-4 w-4 mr-1.5" /> Print OT list

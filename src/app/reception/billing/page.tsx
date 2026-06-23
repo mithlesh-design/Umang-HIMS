@@ -91,15 +91,19 @@ export default function ReceptionBilling() {
 
               {b.status !== 'settled' && (
                 <button onClick={() => {
-                  printableHtml(`Payment slip · ${b.id}`, `
-                    <div class="hdr"><div><h1>AGENTIX HIMS</h1><h2>Payment slip · ${b.id}</h2></div><div style="text-align:right"><b>${new Date().toLocaleDateString('en-IN')}</b></div></div>
-                    <p style="font-size:13px"><b>Patient:</b> ${b.patientName}</p>
-                    <p style="font-size:13px"><b>Visit type:</b> ${b.visitType}</p>
-                    <table><thead><tr><th>Line</th><th style="text-align:right">Amount (₹)</th></tr></thead><tbody>
+                  printableHtml(`Payment Slip · ${b.id}`, `
+                    <div class="info-row">
+                      <div class="info-item"><span class="info-label">Patient</span><span class="info-value">${b.patientName}</span></div>
+                      <div class="info-item"><span class="info-label">Bill No.</span><span class="info-value">${b.id}</span></div>
+                      <div class="info-item"><span class="info-label">Visit Type</span><span class="info-value">${b.visitType}</span></div>
+                      <div class="info-item"><span class="info-label">Payer</span><span class="info-value">${b.payerType}</span></div>
+                    </div>
+                    <h3>Payment Breakdown</h3>
+                    <table><thead><tr><th>Description</th><th style="text-align:right">Amount (₹)</th></tr></thead><tbody>
                       <tr><td>Total billed</td><td style="text-align:right">${b.subtotal.toLocaleString('en-IN')}</td></tr>
-                      <tr><td>Insurance covered</td><td style="text-align:right">- ${b.insuranceCovered.toLocaleString('en-IN')}</td></tr>
-                      <tr><td>Paid so far</td><td style="text-align:right">- ${b.paidAmount.toLocaleString('en-IN')}</td></tr>
-                      <tr class="total"><td>Outstanding due</td><td style="text-align:right">${due.toLocaleString('en-IN')}</td></tr>
+                      <tr><td>Insurance covered</td><td style="text-align:right">− ${b.insuranceCovered.toLocaleString('en-IN')}</td></tr>
+                      <tr><td>Paid so far</td><td style="text-align:right">− ${b.paidAmount.toLocaleString('en-IN')}</td></tr>
+                      <tr class="total"><td>Outstanding due</td><td style="text-align:right">₹${due.toLocaleString('en-IN')}</td></tr>
                     </tbody></table>`)
                   toast.success(`Printing payment slip for ${b.patientName}`)
                 }}

@@ -11,10 +11,13 @@ import { printableHtml } from "@/lib/fileIO"
 
 function downloadDoc(d: { name: string; category: string; date: string; size: string; amount?: string }) {
   const html = `
-    <div class="hdr"><div><h1>AGENTIX HIMS</h1><h2>${d.name}</h2></div><div style="text-align:right"><b>${d.date}</b></div></div>
-    <p style="font-size:13px"><b>Document type:</b> ${d.category}</p>
-    ${d.amount ? `<p style="font-size:13px"><b>Amount:</b> ${d.amount}</p>` : ''}
-    <p style="font-size:12px;color:#64748b">This is a system-generated demo document.</p>`
+    <div class="info-row">
+      <div class="info-item"><span class="info-label">Document</span><span class="info-value">${d.name}</span></div>
+      <div class="info-item"><span class="info-label">Category</span><span class="info-value">${d.category}</span></div>
+      <div class="info-item"><span class="info-label">Date</span><span class="info-value">${d.date}</span></div>
+      ${d.amount ? `<div class="info-item"><span class="info-label">Amount</span><span class="info-value">${d.amount}</span></div>` : ''}
+    </div>
+    <p class="muted">This is a system-generated document from Umang HIMS.</p>`
   printableHtml(d.name, html)
 }
 

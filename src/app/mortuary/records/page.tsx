@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ShieldAlert, FileText, Send, Printer, X } from "lucide-react"
 import { toast } from "sonner"
 import { notifyAndAudit, notifyAndAuditMany } from "@/lib/notifyAndAudit"
+import { printableHtml } from "@/lib/fileIO"
 
 function ReleaseModal({ recordId, onClose }: { recordId: string; onClose: () => void }) {
   const releaseBody = useMortuaryStore((s) => s.releaseBody)
@@ -92,13 +93,22 @@ export default function MortuaryRecords() {
     })
     toast.success(`${name} marked cleared`)
   }
-  function printCert(certNumber?: string) {
-    // Phase-1 mock: open a printable window with the cert details
-    if (typeof window === 'undefined' || !certNumber) return
-    const w = window.open('', 'cert', 'width=600,height=800')
-    if (!w) { toast.error('Pop-up blocked — allow pop-ups to print'); return }
-    w.document.write(`<html><body style="font-family:serif;padding:40px"><h1>AGENTIX HIMS</h1><h2>Death Certificate</h2><p>Cert #: <b>${certNumber}</b></p><p>This is a system-generated demo certificate.</p></body></html>`)
-    w.document.close(); w.print()
+  function printCert(certNumber?: string, record?: { patientName?: string; age?: number; gender?: string; causeOfDeath?: string; certifiedBy?: string; timeOfDeath?: string }) {
+    if (!certNumber) return
+    const r = record ?? {}
+    const timeStr = r.timeOfDeath ? new Date(r.timeOfDeath).toLocaleString('en-IN') : '—'
+    printableHtml(`Death Certificate · ${certNumber}`, `
+      <div class="info-row">
+        <div class="info-item"><span class="info-label">Certificate No.</span><span class="info-value">${certNumber}</span></div>
+        ${r.patientName ? `<div class="info-item"><span class="info-label">Deceased</span><span class="info-value">${r.patientName}</span></div>` : ''}
+        ${r.age !== undefined ? `<div class="info-item"><span class="info-label">Age / Gender</span><span class="info-value">${r.age}Y / ${r.gender ?? '—'}</span></div>` : ''}
+        <div class="info-item"><span class="info-label">Time of Death</span><span class="info-value">${timeStr}</span></div>
+        ${r.certifiedBy ? `<div class="info-item"><span class="info-label">Certified by</span><span class="info-value">${r.certifiedBy}</span></div>` : ''}
+      </div>
+      <h3>Cause of Death</h3>
+      <p>${r.causeOfDeath ?? 'As recorded in medical record'}</p>
+      <p class="muted" style="margin-top:20px">This is a system-generated demo certificate. Official legal certificate must be obtained from the Civil Registration System (CRS).</p>
+    `)
   }
 
   return (
@@ -128,7 +138,7 @@ export default function MortuaryRecords() {
                 </button>
               )}
               {r.deathCertificateNumber && (
-                <button onClick={() => printCert(r.deathCertificateNumber)}
+                <button onClick={() => printCert(r.deathCertificateNumber, r)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11.5px] font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 cursor-pointer">
                   <Printer className="h-3 w-3" /> Print cert
                 </button>

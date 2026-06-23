@@ -153,22 +153,32 @@ export default function PayrollPage() {
   // M11-B — generate a per-row payslip PDF (printable HTML window).
   function downloadPayslip(r: typeof rows[number]) {
     printableHtml(`Payslip · ${r.staff.name} · ${label}`, `
-      <div class="hdr"><div><h1>AGENTIX HIMS</h1><h2>Payslip · ${label}</h2></div><div style="text-align:right"><b>${r.staff.id}</b></div></div>
-      <p style="font-size:13px"><b>Employee:</b> ${r.staff.name} · ${r.staff.designation}</p>
-      <p style="font-size:13px"><b>Department:</b> ${r.staff.department}</p>
+      <div class="info-row">
+        <div class="info-item"><span class="info-label">Employee</span><span class="info-value">${r.staff.name}</span></div>
+        <div class="info-item"><span class="info-label">Staff ID</span><span class="info-value">${r.staff.id}</span></div>
+        <div class="info-item"><span class="info-label">Designation</span><span class="info-value">${r.staff.designation}</span></div>
+        <div class="info-item"><span class="info-label">Department</span><span class="info-value">${r.staff.department}</span></div>
+        <div class="info-item"><span class="info-label">Pay Period</span><span class="info-value">${label}</span></div>
+      </div>
+      <h3>Attendance</h3>
       <table>
-        <thead><tr><th>Line</th><th style="text-align:right">Amount (₹)</th></tr></thead>
+        <thead><tr><th>Component</th><th style="text-align:right">Hours</th></tr></thead>
         <tbody>
-          <tr><td>Scheduled hours</td><td style="text-align:right">${r.scheduledHours.toFixed(2)}h</td></tr>
-          <tr><td>Overtime hours</td><td style="text-align:right">${r.overtimeHours.toFixed(2)}h</td></tr>
+          <tr><td>Scheduled hours</td><td style="text-align:right">${r.scheduledHours.toFixed(2)} h</td></tr>
+          <tr><td>Overtime hours</td><td style="text-align:right">${r.overtimeHours.toFixed(2)} h</td></tr>
+        </tbody>
+      </table>
+      <h3>Salary Breakdown</h3>
+      <table>
+        <thead><tr><th>Component</th><th style="text-align:right">Amount (₹)</th></tr></thead>
+        <tbody>
           <tr><td>Base pay</td><td style="text-align:right">${Math.round(r.baseGross).toLocaleString('en-IN')}</td></tr>
           <tr><td>Overtime pay</td><td style="text-align:right">${Math.round(r.overtimePay).toLocaleString('en-IN')}</td></tr>
           <tr><td>Gross pay</td><td style="text-align:right">${Math.round(r.totalGross).toLocaleString('en-IN')}</td></tr>
-          <tr><td>Deductions (PF/PT/TDS)</td><td style="text-align:right">- ${Math.round(r.deductions).toLocaleString('en-IN')}</td></tr>
-          <tr class="total"><td>Net payable</td><td style="text-align:right">${Math.round(r.netPay).toLocaleString('en-IN')}</td></tr>
+          <tr><td>Deductions (PF / PT / TDS)</td><td style="text-align:right">− ${Math.round(r.deductions).toLocaleString('en-IN')}</td></tr>
+          <tr class="total"><td>Net payable</td><td style="text-align:right">₹${Math.round(r.netPay).toLocaleString('en-IN')}</td></tr>
         </tbody>
-      </table>
-      <p style="font-size:11px;color:#64748b">System-generated payslip · ${new Date().toLocaleDateString('en-IN')}</p>`)
+      </table>`)
   }
 
   const exportCSV = () => {

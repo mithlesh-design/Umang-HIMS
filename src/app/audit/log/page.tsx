@@ -110,16 +110,19 @@ export default function AuditLog() {
         <td>${e.resource ?? '—'}${e.resourceId ? '<br><span style="color:#94a3b8">' + e.resourceId + '</span>' : ''}</td>
         <td>${e.detail ?? '—'}</td>
       </tr>`).join('')
-    printableHtml(`Audit trail · ${filtered.length} events`, `
-      <div class="hdr">
-        <div><h1>AGENTIX HIMS</h1><h2>Audit Trail Report · ${filtered.length} events</h2></div>
-        <div style="text-align:right"><b>${new Date().toLocaleDateString('en-IN')}</b><br><span style="font-size:11px;color:#64748b">Retention policy: ≥ 7 years</span></div>
+    printableHtml(`Audit Trail Report · ${filtered.length} events`, `
+      <div class="info-row">
+        <div class="info-item"><span class="info-label">Total events</span><span class="info-value">${filtered.length}</span></div>
+        <div class="info-item"><span class="info-label">Exported on</span><span class="info-value">${new Date().toLocaleDateString('en-IN')}</span></div>
+        <div class="info-item"><span class="info-label">Retention policy</span><span class="info-value">≥ 7 years (NABH)</span></div>
+        <div class="info-item"><span class="info-label">Classification</span><span class="info-value">Confidential</span></div>
       </div>
+      <h3>Event Log</h3>
       <table>
         <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Resource</th><th>Detail</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <p style="font-size:11px;color:#64748b">${filtered.length > 200 ? `Showing first 200 of ${filtered.length}. Use JSON export for the full set.` : 'Complete event set.'}</p>
+      <p class="muted">${filtered.length > 200 ? `Showing first 200 of ${filtered.length} events. Use JSON export for the complete set.` : 'Complete event set shown.'}</p>
     `)
   }
 

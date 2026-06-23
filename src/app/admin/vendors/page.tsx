@@ -145,19 +145,26 @@ export default function VendorsPage() {
   function downloadInvoicePdf(invId: string) {
     const inv = invoices.find(i => i.id === invId); if (!inv) return
     const v = vendors.find(x => x.id === inv.vendorId)
-    printableHtml(`Invoice · ${inv.invoiceNumber}`, `
-      <div class="hdr"><div><h1>AGENTIX HIMS</h1><h2>Invoice · ${inv.invoiceNumber}</h2></div><div style="text-align:right"><b>Issued: ${inv.issuedDate}</b><br/>Due: ${inv.dueDate}</div></div>
-      <p style="font-size:13px"><b>Vendor:</b> ${inv.vendorName} (${inv.category})${v?.contactEmail ? ' · ' + v.contactEmail : ''}</p>
+    printableHtml(`Vendor Invoice · ${inv.invoiceNumber}`, `
+      <div class="info-row">
+        <div class="info-item"><span class="info-label">Vendor</span><span class="info-value">${inv.vendorName}</span></div>
+        <div class="info-item"><span class="info-label">Category</span><span class="info-value">${inv.category}</span></div>
+        <div class="info-item"><span class="info-label">Invoice #</span><span class="info-value">${inv.invoiceNumber}</span></div>
+        <div class="info-item"><span class="info-label">Issued</span><span class="info-value">${inv.issuedDate}</span></div>
+        <div class="info-item"><span class="info-label">Due Date</span><span class="info-value">${inv.dueDate}</span></div>
+        <div class="info-item"><span class="info-label">Status</span><span class="info-value">${inv.status.toUpperCase()}</span></div>
+      </div>
+      ${v?.contactEmail ? `<p><b>Contact:</b> ${v.contactEmail}</p>` : ''}
+      <h3>Invoice Breakdown</h3>
       <table>
-        <thead><tr><th>Line</th><th style="text-align:right">Amount (₹)</th></tr></thead>
+        <thead><tr><th>Description</th><th style="text-align:right">Amount (₹)</th></tr></thead>
         <tbody>
           <tr><td>Subtotal</td><td style="text-align:right">${inv.amount.toLocaleString('en-IN')}</td></tr>
           <tr><td>GST</td><td style="text-align:right">${inv.gstAmount.toLocaleString('en-IN')}</td></tr>
-          <tr class="total"><td>Total payable</td><td style="text-align:right">${(inv.amount + inv.gstAmount).toLocaleString('en-IN')}</td></tr>
+          <tr class="total"><td>Total payable</td><td style="text-align:right">₹${(inv.amount + inv.gstAmount).toLocaleString('en-IN')}</td></tr>
         </tbody>
       </table>
-      <p style="font-size:13px"><b>Status:</b> ${inv.status.toUpperCase()}${inv.paymentRef ? ' · Ref ' + inv.paymentRef : ''}</p>
-      <p style="font-size:11px;color:#64748b">System-generated invoice copy.</p>
+      ${inv.paymentRef ? `<p><b>Payment reference:</b> ${inv.paymentRef}</p>` : ''}
     `)
   }
 

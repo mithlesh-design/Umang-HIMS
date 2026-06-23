@@ -242,28 +242,34 @@ export default function DischargeSummaryPage() {
   function printSummary() {
     if (!envelope) return
     const d = envelope.data
-    printableHtml(`Discharge summary · ${admissionId}`, `
-      <div class="hdr"><div><h1>AGENTIX HIMS</h1><h2>Discharge Summary · ${admissionId}</h2></div><div style="text-align:right"><b>${d.dischargeDate}</b></div></div>
+    printableHtml(`Discharge Summary · ${admissionId}`, `
+      <div class="info-row">
+        <div class="info-item"><span class="info-label">Admission ID</span><span class="info-value">${admissionId}</span></div>
+        <div class="info-item"><span class="info-label">Admitted</span><span class="info-value">${d.admissionDate}</span></div>
+        <div class="info-item"><span class="info-label">Discharged</span><span class="info-value">${d.dischargeDate}</span></div>
+        <div class="info-item"><span class="info-label">Condition at discharge</span><span class="info-value">${d.conditionAtDischarge}</span></div>
+      </div>
+      <h3>Diagnosis &amp; Procedures</h3>
       <table>
-        <tr><th>Admission</th><td>${d.admissionDate}</td></tr>
-        <tr><th>Discharge</th><td>${d.dischargeDate}</td></tr>
-        <tr><th>Diagnosis</th><td>${d.dischargeDiagnosis}</td></tr>
-        <tr><th>Procedures</th><td>${d.proceduresDone.join(', ')}</td></tr>
-        <tr><th>Condition</th><td>${d.conditionAtDischarge}</td></tr>
+        <tbody>
+          <tr><td><b>Diagnosis</b></td><td>${d.dischargeDiagnosis}</td></tr>
+          <tr><td><b>Procedures</b></td><td>${d.proceduresDone.join(', ')}</td></tr>
+        </tbody>
       </table>
-      <h3>Treatment summary</h3><p style="font-size:13px">${d.treatmentSummary}</p>
-      ${d.otNotes ? `<h3>Surgical notes</h3><p style="font-size:13px">${d.otNotes}</p>` : ''}
-      <h3>Discharge medications</h3>
+      <h3>Treatment Summary</h3><p>${d.treatmentSummary}</p>
+      ${d.otNotes ? `<h3>Surgical Notes</h3><p>${d.otNotes}</p>` : ''}
+      <h3>Discharge Medications</h3>
       <table><thead><tr><th>Drug</th><th>Dose</th><th>Duration</th></tr></thead><tbody>
         ${d.dischargeMedications.map(m => `<tr><td>${m.name}</td><td>${m.dose}</td><td>${m.duration}</td></tr>`).join('')}
       </tbody></table>
-      <h3>Follow-up · ${d.followUpDate}</h3>
-      <ul>${d.followUpInstructions.map(f => `<li style="font-size:12px">${f}</li>`).join('')}</ul>
-      <h3>Warning — return immediately if</h3>
-      <ul>${d.warningSymptoms.map(w => `<li style="font-size:12px;color:#dc2626">${w}</li>`).join('')}</ul>
-      <p style="font-size:13px"><b>Diet:</b> ${d.dietAdvice}</p>
-      <p style="font-size:13px"><b>Activity:</b> ${d.activityRestrictions}</p>
-      ${addendum ? `<h3>Attending physician addendum</h3><p style="font-size:13px;background:#fef3c7;padding:10px;border-radius:6px">${addendum}</p>` : ''}
+      <h3>Follow-up Instructions · ${d.followUpDate}</h3>
+      <ul>${d.followUpInstructions.map(f => `<li>${f}</li>`).join('')}</ul>
+      <h3>Return Immediately If (Warning Signs)</h3>
+      <ul>${d.warningSymptoms.map(w => `<li class="warn-li">${w}</li>`).join('')}</ul>
+      <h3>Home Care</h3>
+      <p><b>Diet:</b> ${d.dietAdvice}</p>
+      <p><b>Activity:</b> ${d.activityRestrictions}</p>
+      ${addendum ? `<h3>Attending Physician Addendum</h3><div class="highlight-block">${addendum}</div>` : ''}
     `)
   }
   function downloadPatientCopy() {
