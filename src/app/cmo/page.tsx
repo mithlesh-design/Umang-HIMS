@@ -209,7 +209,7 @@ export default function CmoHomePage() {
           {/* Critical alerts */}
           <div>
             <SectionHeader
-              title="मंत्री जी का ध्यान · Critical alerts"
+              title="Critical alerts"
               action="View all"
               onAction={() => router.push('/cmo/alerts')}
             />
