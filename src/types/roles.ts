@@ -33,6 +33,10 @@ export const ALL_ROLES = [
   'audit_officer',
   // Patient
   'patient',
+  // Government / District
+  'cmo',
+  // Government / State
+  'secretary',
 ] as const
 
 export type Role = (typeof ALL_ROLES)[number]

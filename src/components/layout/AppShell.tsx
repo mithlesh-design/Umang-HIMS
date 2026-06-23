@@ -12,7 +12,7 @@ import {
   BedDouble, Scissors, CreditCard, Trash2, HeartPulse,
   Droplets, Utensils, Truck, Heart, BookOpen, AlertTriangle, ShieldAlert,
   Sparkles, ChevronRight, MessageSquare, MessageSquarePlus, Video, Siren, Menu, ShoppingCart, Send,
-  List, Star,
+  List, Star, Building2, ArrowLeftRight, MapPin, Baby, Bug,
 } from "lucide-react"
 import { useAuthStore, type Role } from "@/store/useAuthStore"
 import { usePatientStore } from "@/store/usePatientStore"
@@ -146,6 +146,104 @@ const RADIOLOGY_SECTIONS: { header: string; items: NavItem[] }[] = [
     { href: '/radiology/viewer',      label: 'DICOM Viewer',       icon: Microscope },
     { href: '/radiology/templates',   label: 'Report Templates',   icon: BookOpen },
     { href: '/radiology/distribution',label: 'Result Distribution',icon: Send },
+  ] },
+]
+
+const CMO_SECTIONS: { header: string; items: NavItem[] }[] = [
+  { header: 'Daily', items: [
+    { href: '/cmo',           label: 'Home · Today\'s brief',  icon: Home },
+    { href: '/cmo/alerts',    label: 'Alerts',                 icon: AlertTriangle },
+    { href: '/cmo/approvals', label: 'Approvals',              icon: ClipboardCheck },
+  ] },
+  { header: 'Operations', items: [
+    { href: '/cmo/facilities', label: 'Facilities & map',   icon: Building2 },
+    { href: '/cmo/beds',       label: 'Bed network',        icon: BedDouble },
+    { href: '/cmo/ambulance',  label: 'Ambulance command',  icon: Ambulance },
+    { href: '/cmo/emergency',  label: 'Emergency mode',     icon: Siren },
+  ] },
+  { header: 'Workforce', items: [
+    { href: '/cmo/staff',    label: 'Staff & attendance',    icon: Users },
+    { href: '/cmo/postings', label: 'Postings & escalations', icon: ArrowLeftRight },
+  ] },
+  { header: 'Public Health', items: [
+    { href: '/cmo/surveillance',     label: 'Surveillance & outbreaks', icon: Activity },
+    { href: '/cmo/mch',              label: 'MCH & immunization',      icon: HeartPulse },
+    { href: '/cmo/disease-programs', label: 'Disease programs',         icon: Stethoscope },
+  ] },
+  { header: 'Schemes & Supply', items: [
+    { href: '/cmo/schemes',   label: 'PM-JAY & schemes', icon: ShieldCheck },
+    { href: '/cmo/supply',    label: 'Drugs & supply',   icon: Pill },
+    { href: '/cmo/equipment', label: 'Equipment & AMC',  icon: Settings },
+  ] },
+  { header: 'Quality', items: [
+    { href: '/cmo/quality',    label: 'Quality & incidents', icon: Star },
+    { href: '/cmo/grievances', label: 'RTI & grievances',    icon: MessageSquare },
+  ] },
+  { header: 'Field & Reports', items: [
+    { href: '/cmo/field-visits', label: 'Field visits',      icon: MapPin },
+    { href: '/cmo/reports',      label: 'Reports & returns', icon: FileText },
+  ] },
+  { header: 'Comms & AI', items: [
+    { href: '/cmo/communication', label: 'Communication', icon: MessageSquarePlus },
+    { href: '/cmo/ai-assistants', label: 'AI assistants', icon: Sparkles },
+  ] },
+  { header: 'Admin', items: [
+    { href: '/cmo/settings',  label: 'Settings',  icon: Settings },
+    { href: '/cmo/audit-log', label: 'Audit log', icon: ClipboardList },
+    { href: '/cmo/profile',   label: 'Profile',   icon: UserCog },
+  ] },
+]
+
+const SECRETARY_SECTIONS: { header: string; items: NavItem[] }[] = [
+  { header: 'Daily', items: [
+    { href: '/secretary',           label: 'Home · State brief',       icon: Home },
+    { href: '/secretary/alerts',    label: 'Alerts',                   icon: AlertTriangle },
+    { href: '/secretary/approvals', label: 'Approvals',                icon: ClipboardCheck },
+  ] },
+  { header: 'State command', items: [
+    { href: '/secretary/ranking',      label: 'Map & district ranking',    icon: BarChart3 },
+    { href: '/secretary/mobilization', label: 'Inter-district mobilization', icon: ArrowLeftRight },
+    { href: '/secretary/beds',         label: 'State bed network',          icon: BedDouble },
+    { href: '/secretary/emergency',    label: 'Statewide emergency',        icon: Siren },
+  ] },
+  { header: 'Network', items: [
+    { href: '/secretary/districts', label: '52 District cockpits', icon: Building2 },
+    { href: '/secretary/dme',       label: 'DME · 14 colleges',    icon: Stethoscope },
+    { href: '/secretary/ayush',     label: 'AYUSH facilities',     icon: HeartPulse },
+  ] },
+  { header: 'Public Health', items: [
+    { href: '/secretary/surveillance',     label: 'Surveillance & outbreaks', icon: Activity },
+    { href: '/secretary/mch',              label: 'MCH & immunization',      icon: Baby },
+    { href: '/secretary/disease-programs', label: 'Disease programs',         icon: Bug },
+  ] },
+  { header: 'Schemes & Funds', items: [
+    { href: '/secretary/schemes', label: 'PM-JAY & state schemes', icon: ShieldCheck },
+    { href: '/secretary/fraud',   label: 'Fraud command',           icon: ShieldAlert },
+  ] },
+  { header: 'Workforce & Supply', items: [
+    { href: '/secretary/workforce', label: 'Workforce & DME faculty',   icon: Users },
+    { href: '/secretary/supply',    label: 'Supply chain & MPPHSCL',    icon: Pill },
+  ] },
+  { header: 'Quality & Compliance', items: [
+    { href: '/secretary/quality',   label: 'Quality & incidents', icon: Star },
+    { href: '/secretary/cag-audit', label: 'CAG audit & RTI',     icon: FileText },
+  ] },
+  { header: 'Reports', items: [
+    { href: '/secretary/reports',   label: 'National reports & PIP', icon: ClipboardList },
+    { href: '/secretary/niti-abdm', label: 'NITI Aayog & ABDM',      icon: BarChart3 },
+  ] },
+  { header: 'Policy & Centre', items: [
+    { href: '/secretary/cabinet',       label: 'Cabinet, Assembly, policy', icon: BookOpen },
+    { href: '/secretary/centre',        label: 'Centre · MoHFW & NHA',     icon: Building2 },
+  ] },
+  { header: 'Comms & AI', items: [
+    { href: '/secretary/communication', label: 'Communication & press', icon: MessageSquarePlus },
+    { href: '/secretary/ai-assistants', label: 'AI assistants',          icon: Sparkles },
+  ] },
+  { header: 'Admin', items: [
+    { href: '/secretary/settings',  label: 'Settings',  icon: Settings },
+    { href: '/secretary/audit-log', label: 'Audit log', icon: ClipboardList },
+    { href: '/secretary/profile',   label: 'Profile',   icon: UserCog },
   ] },
 ]
 
@@ -307,6 +405,8 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: '/vendor-manager/performance',      label: 'Performance',     icon: BarChart3 },
     { href: '/vendor-manager/ai-insights',      label: 'AI Insights',     icon: Sparkles },
   ],
+  cmo:       CMO_SECTIONS.flatMap(s => s.items),
+  secretary: SECRETARY_SECTIONS.flatMap(s => s.items),
 }
 
 // Single disciplined deep-blue identity shared by every portal (uniform per design
@@ -322,6 +422,8 @@ const ROLE_LABELS: Record<Role, string> = {
   mortuary: 'Mortuary',           ambulance: 'Ambulance Svc.',   audit_officer: 'Audit & Compliance',
   hr: 'HR Portal',                vendor_manager: 'Vendor Mgmt',
   feedback_analyst: 'Patient Feedback',
+  cmo:       'CMO Cockpit',
+  secretary: 'PS Health · MP',
 }
 
 const BRAND = {
@@ -342,6 +444,8 @@ const sectionsByRole: Partial<Record<Role, { header: string; items: NavItem[] }[
   doctor: DOCTOR_SECTIONS,
   pharmacy: PHARMACY_SECTIONS,
   radiology: RADIOLOGY_SECTIONS,
+  cmo:       CMO_SECTIONS,
+  secretary: SECRETARY_SECTIONS,
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -428,7 +532,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     : { duration: 0.28, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
 
   const renderItem = (item: NavItem) => {
-    const isActive = pathname.startsWith(item.href)
+    // Exact match wins; prefix match only when no more-specific nav item also matches,
+    // preventing the root route (/secretary) from staying active on every sub-page.
+    const isActive =
+      pathname === item.href ||
+      (pathname.startsWith(item.href + '/') &&
+        !nav.some(other => other.href !== item.href && pathname.startsWith(other.href)))
     const Icon = item.icon
     return (
       <Link key={item.href} href={item.href}>

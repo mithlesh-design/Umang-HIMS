@@ -153,6 +153,8 @@ export const PERMISSIONS_MATRIX: Record<Role, ReadonlySet<Action>> = {
   vendor_manager:   SUPPORT_PERMS,
   feedback_analyst: QUALITY_PERMS,
   patient:          PATIENT_PERMS,
+  cmo:              ADMIN_ALL,
+  secretary:        ADMIN_ALL,
 }
 
 /**

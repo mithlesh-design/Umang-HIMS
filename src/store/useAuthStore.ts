@@ -56,6 +56,10 @@ const DEMO_USERS: Record<Role, User> = {
   audit_officer:{ id: 'AU-1801',  name: 'Preethi Krishnan',      role: 'audit_officer',department: 'Audit & Compliance' },
   // Patient
   patient:      { id: 'PT-20394', name: 'Kiran Patil',           role: 'patient' },
+  // Government / District
+  cmo:          { id: 'usr_cmo_bhopal_01',     name: 'Dr. Rajesh Sharma',    role: 'cmo',       department: 'CMHO Bhopal' },
+  // Government / State
+  secretary:    { id: 'usr_secretary_mp_01',   name: 'Smt. Anuradha Verma',  role: 'secretary', department: 'Principal Secretary Health, MP' },
 }
 
 export const DEMO_USERS_MAP = DEMO_USERS

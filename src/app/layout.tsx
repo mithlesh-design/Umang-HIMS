@@ -25,6 +25,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head>
+        {/* Noto Sans Devanagari — for Hindi text in CMO cockpit */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600&display=swap" rel="stylesheet" />
+      </head>
       <body suppressHydrationWarning className="font-body antialiased text-foreground bg-background">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <StoreHydrator />

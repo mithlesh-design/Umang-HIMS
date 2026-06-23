@@ -8,6 +8,7 @@ import {
   ArrowRight, LayoutDashboard, Ambulance, Microscope, ScanLine, FileText,
   Package, ClipboardList, Droplets, Utensils, Trash2, Truck, ShieldCheck,
   BedDouble, CreditCard, Scissors, Heart, ShoppingCart, MessageSquarePlus,
+  Building2,
 } from "lucide-react"
 import { useAuthStore, type Role } from "@/store/useAuthStore"
 import { cn } from "@/lib/utils"
@@ -53,6 +54,10 @@ const allRoleGroups: { id: string; label: string; roles: RoleCard[] }[] = [
   ] },
   { id: "patient", label: "Patient", roles: [
     { role: "patient", label: "Patient Portal", desc: "Track queue, view records, billing, appointments", icon: Users, href: "/patient/dashboard" },
+  ] },
+  { id: "government", label: "Government", roles: [
+    { role: "cmo",       label: "CMO — Bhopal",      desc: "District health cockpit · 142 facilities · alerts, beds, ambulance",     icon: Building2, href: "/cmo" },
+    { role: "secretary", label: "PS Health · MP",    desc: "State command · 52 districts · district ranking, Cabinet, NITI Aayog", icon: Building2, href: "/secretary" },
   ] },
 ]
 
