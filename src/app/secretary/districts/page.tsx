@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, MapPin, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
 import { useSecretaryDistrictsStore } from '@/store/useSecretaryDistrictsStore'
 import type { District, DistrictRegion } from '@/types/secretary'
@@ -14,6 +15,7 @@ function scoreColor(s: number) {
 }
 
 export default function DistrictsPage() {
+  const router = useRouter()
   const { districts } = useSecretaryDistrictsStore()
   const [query, setQuery] = useState('')
   const [region, setRegion] = useState<DistrictRegion | 'all'>('all')
@@ -88,7 +90,10 @@ export default function DistrictsPage() {
               {d.topAlerts > 0 && (
                 <p className="text-[10px] text-rose-600 font-medium mb-2">{d.topAlerts} active alert{d.topAlerts > 1 ? 's' : ''}</p>
               )}
-              <button className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium text-[var(--color-primary)] border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors">
+              <button
+                onClick={() => router.push(`/secretary/districts/${d.id}`)}
+                className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium text-[var(--color-primary)] border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors cursor-pointer"
+              >
                 Open cockpit <ArrowRight className="h-3 w-3" />
               </button>
             </div>
