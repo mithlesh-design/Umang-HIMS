@@ -318,10 +318,11 @@ const navByRole: Record<Role, NavItem[]> = {
   ],
   radiology: RADIOLOGY_SECTIONS.flatMap(s => s.items),
   insurance: [
-    { href: '/insurance/dashboard', label: 'TPA Overview',  icon: LayoutDashboard },
-    { href: '/insurance/claims',    label: 'Active Claims', icon: FileText },
-    { href: '/insurance/preauth',   label: 'Pre-Auth',      icon: ShieldCheck },
-    { href: '/insurance/documents', label: 'Documents',     icon: Package },
+    { href: '/insurance/dashboard', label: 'TPA Overview',       icon: LayoutDashboard },
+    { href: '/insurance/pipeline',  label: 'Approval Pipeline',  icon: Workflow },
+    { href: '/insurance/claims',    label: 'Active Claims',      icon: FileText },
+    { href: '/insurance/preauth',   label: 'Pre-Auth',           icon: ShieldCheck },
+    { href: '/insurance/documents', label: 'Documents',          icon: Package },
   ],
   inventory: [
     { href: '/inventory/dashboard', label: 'Asset Overview',     icon: LayoutDashboard },

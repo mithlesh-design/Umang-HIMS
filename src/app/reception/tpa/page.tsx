@@ -17,14 +17,13 @@ export default function ReceptionTPA() {
   const totalClaimsValue = useInsuranceStore(s => s.totalClaimsValue)
 
   const approved = claims.filter(c => c.status === 'Approved').length
-  // Derive from the live claims list rather than the store's static counter.
   const pendingApprovals = claims.filter(c => c.status === 'Pending Pre-Auth' || c.status === 'In Process').length
 
   const tiles = [
-    { label: 'Claims value', value: `₹${(totalClaimsValue / 100000).toFixed(1)}L`, icon: FileText, tint: 'bg-[rgba(14,116,144,0.07)] text-[#0E7490]' },
-    { label: 'Pending approvals', value: `${pendingApprovals}`, icon: Clock, tint: 'bg-amber-50 text-amber-600' },
-    { label: 'Approved', value: `${approved}`, icon: CheckCircle2, tint: 'bg-green-50 text-green-600' },
-    { label: 'Active claims', value: `${claims.length}`, icon: ShieldCheck, tint: 'bg-[rgba(14,116,144,0.07)] text-[#0E7490]' },
+    { label: 'Claims value',    value: `₹${(totalClaimsValue / 100000).toFixed(1)}L`, icon: FileText,     tint: 'bg-[rgba(14,116,144,0.07)] text-[#0E7490]' },
+    { label: 'Pending approvals', value: `${pendingApprovals}`,                        icon: Clock,        tint: 'bg-amber-50 text-amber-600' },
+    { label: 'Approved',        value: `${approved}`,                                  icon: CheckCircle2, tint: 'bg-green-50 text-green-600' },
+    { label: 'Active claims',   value: `${claims.length}`,                             icon: ShieldCheck,  tint: 'bg-[rgba(14,116,144,0.07)] text-[#0E7490]' },
   ]
 
   return (
@@ -42,7 +41,7 @@ export default function ReceptionTPA() {
       </div>
 
       <div className="space-y-3">
-        {claims.map(c => (
+        {claims.filter(c => c.approvalStage !== 'settled' && c.approvalStage !== 'rejected').map(c => (
           <div key={c.id} className="rounded-2xl bg-white shadow-[0_1px_4px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.04)] p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
