@@ -68,11 +68,19 @@ export default function ReceptionAppointments() {
       toast.success('Appointment rescheduled', { description: `${draft.patientName} · ${fmtDate(draft.date)} ${draft.time}` })
     } else {
       const match = patients.find(p => p.name.toLowerCase() === draft.patientName.trim().toLowerCase())
+      const isToday = draft.date === todayISO()
+      const isInPerson = draft.mode === 'in_person'
       bookAppointment({
         patientId: match?.id ?? `WALKIN-${Date.now()}`, patientName: draft.patientName.trim(),
         doctorName: doc.name, specialty: doc.specialty, mode: draft.mode, date: draft.date, time: draft.time, status: 'upcoming',
       })
-      toast.success('Appointment booked', { description: `${draft.patientName} · ${doc.name} · ${fmtDate(draft.date)} ${draft.time}` })
+      if (isToday && isInPerson) {
+        toast.success('Appointment booked & added to OPD queue', {
+          description: `${draft.patientName} · ${doc.name} · ${draft.time} — Reception & nursing notified`,
+        })
+      } else {
+        toast.success('Appointment booked', { description: `${draft.patientName} · ${doc.name} · ${fmtDate(draft.date)} ${draft.time}` })
+      }
     }
     setShowModal(false)
   }

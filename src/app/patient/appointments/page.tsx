@@ -121,10 +121,12 @@ export default function PatientAppointments() {
     if (!selectedDoctor || !selectedSlot) return
     bookAppointment({
       patientId: 'PT-20391',
+      patientName: 'Kiran Patil',
       doctorName: selectedDoctor.name,
       specialty: selectedDoctor.specialty,
       date: selectedDate.toISOString().slice(0, 10),
       time: selectedSlot,
+      mode: 'in_person',
       status: 'upcoming',
     })
     notifyAndAuditMany(['reception', 'doctor'], {

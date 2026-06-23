@@ -427,9 +427,88 @@ export const usePatientStore = create<PatientState>()(persist((set, get) => ({
     })
   },
 
-  bookAppointment: (appt) => set((s) => ({
-    appointments: [...s.appointments, { ...appt, id: `APT-${Date.now()}` }],
-  })),
+  bookAppointment: (appt) => {
+    const apptId = `APT-${Date.now()}`
+    set((s) => ({ appointments: [...s.appointments, { ...appt, id: apptId }] }))
+
+    // Auto-queue today's in-person appointments so they appear in OPD Waiting Room
+    // and reception + nursing are both notified immediately.
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (appt.date === todayStr && (appt.mode ?? 'in_person') === 'in_person') {
+      const state = get()
+
+      // Resolve existing patient record first (by ID or name) to get full demographics
+      const existing = state.patients.find(p =>
+        p.id === appt.patientId ||
+        (appt.patientName && p.name.toLowerCase() === appt.patientName.toLowerCase())
+      )
+      const patientName = appt.patientName ?? existing?.name ?? 'Patient'
+
+      // De-dup: skip if already in today's active queue
+      const alreadyQueued = state.patients.find(p =>
+        p.name.toLowerCase() === patientName.toLowerCase() &&
+        p.registeredDate === todayStr &&
+        ['waiting', 'vitals', 'consulting'].includes(p.queueStatus)
+      )
+      if (alreadyQueued) return
+
+      const nextToken = Math.max(...state.patients.map(p => p.token), 0) + 1
+      const queuedPatient: Patient = {
+        id: existing?.id ?? `PT-APT-${Date.now()}`,
+        name: patientName,
+        age: existing?.age ?? 30,
+        gender: existing?.gender ?? 'Male',
+        phone: existing?.phone ?? '',
+        bloodGroup: existing?.bloodGroup ?? 'A+',
+        token: nextToken,
+        queueStatus: 'waiting',
+        estimatedWait: nextToken * 4,
+        doctor: appt.doctorName,
+        department: appt.specialty,
+        vitals: null,
+        symptoms: existing?.symptoms ?? [],
+        history: existing?.history ?? [],
+        registeredAt: appt.time,
+        registeredDate: todayStr,
+        triageLevel: existing?.triageLevel ?? 'Low',
+        hasReports: existing?.hasReports ?? false,
+      }
+
+      set((s) => ({
+        patients: [queuedPatient, ...s.patients.filter(p => p.id !== queuedPatient.id)],
+        queue: [queuedPatient, ...s.queue.filter(p => p.id !== queuedPatient.id)],
+      }))
+
+      // Notify reception — new patient in OPD Waiting Room
+      useNotificationStore.getState().add({
+        type: 'system',
+        priority: 'medium',
+        title: `Appointment check-in · ${patientName}`,
+        body: `${patientName} has a ${appt.time} appointment with ${appt.doctorName} (${appt.specialty}). Token #${nextToken} added to OPD Waiting Room.`,
+        targetRole: 'reception',
+        patientName,
+        channels: ['in_app'],
+      })
+
+      // Notify nursing — patient arriving for vitals
+      useNotificationStore.getState().add({
+        type: 'vitals_request',
+        priority: 'medium',
+        title: `Incoming for vitals · ${patientName}`,
+        body: `${patientName} (Token #${nextToken}, ${appt.time}) is in the OPD Waiting Room — ${appt.specialty} · ${appt.doctorName}. Please prepare for vitals.`,
+        targetRole: 'nurse',
+        patientName,
+        channels: ['in_app'],
+      })
+
+      useAuditStore.getState().log({
+        userId: 'RC-1101', userName: 'Reception',
+        action: 'reception_registered',
+        resource: 'opd_patient', resourceId: queuedPatient.id,
+        detail: `${patientName} (Token #${nextToken}) auto-queued from ${appt.time} appointment · ${appt.specialty} · ${appt.doctorName}`,
+      })
+    }
+  },
 
   updateAppointment: (id, patch) => set((s) => ({
     appointments: s.appointments.map(a => a.id === id ? { ...a, ...patch } : a),
