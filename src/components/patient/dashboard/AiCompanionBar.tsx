@@ -17,8 +17,8 @@ export function AiCompanionBar() {
   const [text, setText] = useState("")
 
   return (
-    <div className="rounded-3xl p-[1.5px] bg-gradient-to-r from-[#0E7490] via-[#1E97B2] to-[#0E7490] shadow-[0_8px_28px_rgba(14,116,144,0.25)]">
-      <div className="rounded-[22px] bg-white p-4">
+    <div className="rounded-3xl p-[1.5px] bg-gradient-to-r from-[#0E7490] via-[#1E97B2] to-[#0E7490] shadow-[0_8px_28px_rgba(14,116,144,0.25)] overflow-hidden">
+      <div className="rounded-[22px] bg-white p-4 overflow-hidden">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#0E7490] to-[#1E97B2] flex items-center justify-center flex-shrink-0">
             <Sparkles className="h-5 w-5 text-white" />
