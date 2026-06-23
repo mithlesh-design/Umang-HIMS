@@ -31,7 +31,8 @@ export function startDictation(onText: (chunk: string) => void, onEnd: () => voi
     if (text.trim()) onText(text.trim())
   }
   rec.onend = onEnd
-  rec.onerror = onEnd
+  // 'aborted' fires when stop() is called — treat it the same as natural end.
+  rec.onerror = (e: any) => { if ((e?.error || '') !== 'aborted') onEnd() }
   try { rec.start() } catch { return null }
   return { stop: () => { try { rec.stop() } catch { /* ignore */ } } }
 }
@@ -65,7 +66,13 @@ export function startVoiceCommand(opts: {
     }
     opts.onPartial?.((finalText + interim).trim())
   }
-  rec.onerror = (e: any) => opts.onError?.(e?.error || 'error')
+  rec.onerror = (e: any) => {
+    const err: string = e?.error || 'error'
+    // 'aborted' fires in Chrome when stop() is called or when recognition ends
+    // after silence — it is not a real failure. 'no-speech' is also expected.
+    // Only propagate errors that actually need user attention.
+    if (err !== 'aborted' && err !== 'no-speech') opts.onError?.(err)
+  }
   rec.onend = () => { const t = finalText.trim(); if (t) opts.onFinal(t); opts.onEnd?.() }
   try { rec.start() } catch { opts.onError?.('start-failed'); return null }
   return { stop: () => { try { rec.stop() } catch { /* ignore */ } } }
