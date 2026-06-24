@@ -34,7 +34,7 @@ export interface IntakeForm {
   abhaId: string
   ayushmanCardNo: string
   govtSchemeVerified: boolean
-  schemeName: string
+  schemeName: 'AB-PMJAY' | 'CMHIS-UP' | ''
 }
 
 export function initialForm(): IntakeForm {
