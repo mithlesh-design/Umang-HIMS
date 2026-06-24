@@ -271,6 +271,11 @@ export default function AdmissionDashboard() {
                         <span className="flex items-center gap-1"><Bed className="h-3 w-3" />{req.admissionType}</span>
                         <span className="flex items-center gap-1" suppressHydrationWarning><Clock className="h-3 w-3" />{elapsed(req.requestedAt)}</span>
                         <span>{req.payerType}</span>
+                        {(req.payerType?.includes('AB-PMJAY') || req.payerType?.includes('PMJAY') || req.payerType?.includes('CMHIS')) && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                            Ayushman
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
