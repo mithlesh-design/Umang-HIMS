@@ -13,6 +13,7 @@ import {
   Droplets, Utensils, Truck, Heart, BookOpen, AlertTriangle, ShieldAlert,
   Sparkles, ChevronRight, MessageSquare, MessageSquarePlus, Video, Siren, Menu, ShoppingCart, Send,
   List, Star, Building2, ArrowLeftRight, MapPin, Baby, Bug,
+  Droplet, Cpu, SlidersHorizontal, RefreshCw,
 } from "lucide-react"
 import { useAuthStore, type Role } from "@/store/useAuthStore"
 import { usePatientStore } from "@/store/usePatientStore"
@@ -306,15 +307,15 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: '/emergency/dashboard', label: 'ER Overview',   icon: LayoutDashboard },
   ],
   lab: [
-    { href: '/lab/dashboard',       label: 'Lab Overview',     icon: FlaskConical },
-    { href: '/lab/phlebotomy',      label: 'Phlebotomy',       icon: Activity },
+    { href: '/lab/dashboard',       label: 'Lab Overview',     icon: LayoutDashboard },
+    { href: '/lab/phlebotomy',      label: 'Phlebotomy',       icon: Droplet },
     { href: '/lab/inbox',           label: 'Sample Inbox',     icon: ClipboardList },
-    { href: '/lab/analyzer-feed',   label: 'Analyzer feed',    icon: Activity },
-    { href: '/lab/verify',          label: 'Verification',     icon: ShieldCheck },
+    { href: '/lab/analyzer-feed',   label: 'Analyzer feed',    icon: Cpu },
+    { href: '/lab/verify',          label: 'Verification',     icon: ClipboardCheck },
     { href: '/lab/benches',         label: 'Manual entries',   icon: Microscope },
-    { href: '/lab/microbiology',    label: 'Microbiology',     icon: Activity },
-    { href: '/lab/qc',              label: 'Quality Control',  icon: ShieldCheck },
-    { href: '/lab/reflex',          label: 'Reflex Tests',     icon: Activity },
+    { href: '/lab/microbiology',    label: 'Microbiology',     icon: Bug },
+    { href: '/lab/qc',              label: 'Quality Control',  icon: SlidersHorizontal },
+    { href: '/lab/reflex',          label: 'Reflex Tests',     icon: RefreshCw },
   ],
   radiology: RADIOLOGY_SECTIONS.flatMap(s => s.items),
   insurance: [
