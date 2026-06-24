@@ -170,7 +170,12 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
             return (
               <button
                 key={val}
-                onClick={() => update({ payer: val, govtSchemeVerified: false, schemeName: '' })}
+                onClick={() => {
+                  update({ payer: val, govtSchemeVerified: false, schemeName: '' })
+                  setShowAadhaarFallback(false)
+                  setAadhaarNo('')
+                  setGovtResult(null)
+                }}
                 aria-pressed={sel}
                 className={cn(
                   "flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E7490]",
@@ -239,7 +244,7 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
               <button onClick={verify} disabled={!canVerify || checking}
                 className={cn("w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
                   (!canVerify || checking) ? "bg-slate-200 text-slate-400" : "bg-[#0E7490] text-white")}>
-                {checking ? <><Loader2 className="h-4.5 w-4.5 animate-spin" /> Checking with {form.insurer || 'insurer'}…</> : <><ShieldCheck className="h-4.5 w-4.5" /> Verify policy</>}
+                {checking ? <><Loader2 className="h-5 w-5 animate-spin" /> Checking with {form.insurer || 'insurer'}…</> : <><ShieldCheck className="h-5 w-5" /> Verify policy</>}
               </button>
               <p className="text-[12px] text-slate-400 ml-1">We confirm your policy is active &amp; cashless-eligible before you continue.</p>
             </>
@@ -350,17 +355,17 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
                   ? verifyGovt(`aadhaar-${aadhaarNo}`, form.ayushmanCardNo)
                   : verifyGovt(form.abhaId, form.ayushmanCardNo)
                 }
-                disabled={showAadhaarFallback ? !canVerifyAadhaar : (!canVerifyGovt || govtChecking)}
+                disabled={showAadhaarFallback ? (!canVerifyAadhaar || govtChecking) : (!canVerifyGovt || govtChecking)}
                 className={cn(
                   "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
-                  (showAadhaarFallback ? !canVerifyAadhaar : (!canVerifyGovt || govtChecking))
+                  (showAadhaarFallback ? (!canVerifyAadhaar || govtChecking) : (!canVerifyGovt || govtChecking))
                     ? "bg-slate-200 text-slate-400"
                     : "bg-green-600 text-white hover:bg-green-700",
                 )}
               >
                 {govtChecking
-                  ? <><Loader2 className="h-4.5 w-4.5 animate-spin" /> Checking with NHA…</>
-                  : <><ShieldCheck className="h-4.5 w-4.5" /> Verify Ayushman eligibility</>}
+                  ? <><Loader2 className="h-5 w-5 animate-spin" /> Checking with NHA…</>
+                  : <><ShieldCheck className="h-5 w-5" /> Verify Ayushman eligibility</>}
               </button>
               <p className="text-[12px] text-slate-400 ml-1">We confirm your Ayushman beneficiary status before you continue.</p>
             </>
