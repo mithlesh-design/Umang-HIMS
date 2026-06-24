@@ -15,10 +15,33 @@ const PENDING_ADMISSIONS = [
   { id: 'ADM-2026-0094', patient: 'Rajesh Kumar', diagnosis: 'Acute Appendicitis', insurer: 'Niva Bupa' },
 ]
 
+const PENDING_AYUSHMAN = [
+  {
+    id: 'ADM-2026-0097',
+    patient: 'Sunita Devi',
+    abhaId: '14-8821-3341-7090',
+    schemeName: 'AB-PMJAY' as const,
+    preAuthRef: 'PMJAY-PRE-4729103',
+    diagnosis: 'Uterine Fibroid — Laparoscopic Myomectomy',
+    coverage: 'Covered up to ₹5,00,000/year',
+  },
+  {
+    id: 'ADM-2026-0099',
+    patient: 'Ramesh Yadav',
+    abhaId: '14-3312-8891-0041',
+    schemeName: 'CMHIS-UP' as const,
+    preAuthRef: 'CMHIS-PRE-8812047',
+    diagnosis: 'Cataract — Phacoemulsification',
+    coverage: 'Covered up to ₹5,00,000/year (CMHIS-UP)',
+  },
+]
+
 export default function InsurancePreAuthPage() {
   const [draft, setDraft] = useState<AiEnvelope<PreAuthDraft> | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState<string[]>([])
+  const [ayushmanSubmitted, setAyushmanSubmitted] = useState<string[]>([])
+  const [ayushmanLoading, setAyushmanLoading] = useState<string | null>(null)
 
   const generate = async (admissionId: string) => {
     setLoading(true)
@@ -63,6 +86,71 @@ export default function InsurancePreAuthPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Ayushman / Govt Scheme Pre-Auth */}
+      <div className="mt-8">
+        <h3 className="text-lg font-bold text-slate-900 mb-1">Govt Scheme Pre-Auth (Ayushman)</h3>
+        <p className="text-slate-500 text-sm mb-4">AB-PMJAY and CMHIS-UP patients awaiting NHA pre-authorisation</p>
+        <div className="space-y-3">
+          {PENDING_AYUSHMAN.map((adm) => (
+            <div key={adm.id} className="bg-white rounded-xl border border-teal-200 p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="h-5 w-5 text-teal-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-slate-900 text-sm">{adm.patient}</p>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                      {adm.schemeName}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">{adm.id} · ABHA: {adm.abhaId}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{adm.diagnosis}</p>
+                  <p className="text-xs text-teal-600 mt-0.5 font-medium">{adm.coverage}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {ayushmanSubmitted.includes(adm.id) ? (
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-1 rounded-full">Submitted</span>
+                    <p className="text-[10px] text-slate-400 mt-1">Ref: {adm.preAuthRef}</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      setAyushmanLoading(adm.id)
+                      await new Promise(r => setTimeout(r, 900))
+                      setAyushmanSubmitted(prev => [...prev, adm.id])
+                      setAyushmanLoading(null)
+                      notifyAndAuditMany(['billing', 'patient'], {
+                        type: 'system', priority: 'high',
+                        title: `Ayushman pre-auth submitted · ${adm.id}`,
+                        body: `Pre-auth submitted to NHA for ${adm.patient} (${adm.schemeName}). Ref: ${adm.preAuthRef}.`,
+                        audit: {
+                          action: 'insurance_claim_submitted',
+                          resource: 'preauth',
+                          resourceId: adm.id,
+                          detail: `Ayushman pre-auth submitted · ref ${adm.preAuthRef}`,
+                          userName: 'Insurance desk',
+                        },
+                      })
+                      toast.success(`Pre-auth submitted · ref ${adm.preAuthRef}`)
+                    }}
+                    disabled={ayushmanLoading === adm.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors"
+                  >
+                    {ayushmanLoading === adm.id
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <ShieldCheck className="h-3.5 w-3.5" />}
+                    Submit to NHA
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {draft && (
