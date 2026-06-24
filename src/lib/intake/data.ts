@@ -5,7 +5,7 @@ export type Gender = 'Male' | 'Female' | 'Other'
 export type IntakeMethod = 'type' | 'aadhaar' | 'voice'
 export type TriageLevel = 'Low' | 'Medium' | 'High' | 'Critical'
 export type ConsultationType = '' | 'in_person' | 'video'
-export type Payer = '' | 'self' | 'cashless'
+export type Payer = '' | 'self' | 'cashless' | 'govtScheme'
 export type PayMethod = '' | 'upi' | 'card' | 'counter'
 
 export interface IntakeForm {
@@ -31,6 +31,10 @@ export interface IntakeForm {
   policyId: string
   policyHolder: string
   insuranceVerified: boolean
+  abhaId: string
+  ayushmanCardNo: string
+  govtSchemeVerified: boolean
+  schemeName: string
 }
 
 export function initialForm(): IntakeForm {
@@ -43,6 +47,7 @@ export function initialForm(): IntakeForm {
     hasReports: false, dishaConsent: false, familyPhone: '',
     payer: '', payMethod: '', insurer: '', insuranceCardNo: '',
     policyId: '', policyHolder: '', insuranceVerified: false,
+    abhaId: '', ayushmanCardNo: '', govtSchemeVerified: false, schemeName: '',
   }
 }
 
@@ -213,7 +218,10 @@ export function canContinue(id: StepId, form: IntakeForm): boolean {
     case 'symptoms': return form.symptoms.length > 0
     case 'department': return form.departments.length > 0
     case 'slot': return !!form.slotDoctor && !!form.slotDate && !!form.slotTime
-    case 'payment': return form.payer === 'cashless' ? form.insuranceVerified : (form.payer === 'self' && !!form.payMethod)
+    case 'payment':
+      if (form.payer === 'govtScheme') return form.govtSchemeVerified
+      if (form.payer === 'cashless') return form.insuranceVerified
+      return form.payer === 'self' && !!form.payMethod
     default: return true // method/aadhaar/voice/reports/family/review
   }
 }
