@@ -24,7 +24,9 @@ export async function checkAbhaEligibility(
   }
 
   const schemeName = ayushmanCardNo.toUpperCase().startsWith('UP-') ? 'CMHIS-UP' : 'AB-PMJAY'
-  const preAuthRef = `PMJAY-PRE-${Math.floor(1000000 + Math.random() * 9000000)}`
+  const preAuthRef = schemeName === 'CMHIS-UP'
+    ? `CMHIS-PRE-${Math.floor(1000000 + Math.random() * 9000000)}`
+    : `PMJAY-PRE-${Math.floor(1000000 + Math.random() * 9000000)}`
 
   return {
     eligible: true,
