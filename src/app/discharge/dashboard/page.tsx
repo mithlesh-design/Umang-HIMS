@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { DischargeClearanceBoard } from "@/components/discharge/DischargeClearanceBoard"
 import { DischargeSummaryResubmitModal, type ResubmitData } from "@/components/discharge/DischargeSummaryResubmitModal"
 import { useInpatientStore } from "@/store/useInpatientStore"
+import { usePatientProfileStore } from "@/store/usePatientProfileStore"
 import { LogOut, ChevronRight as ChevronRightIcon } from "lucide-react"
 
 const PILLAR_CONFIG: Record<ClearancePillar, { label: string; icon: React.ElementType; color: string }> = {
@@ -76,6 +77,7 @@ function ClearancePillarBadge({ pillar, status, onClick }: { pillar: ClearancePi
 
 function PatientCard({ patient, highlighted = false, dimmed = false }: { patient: DischargePatient; highlighted?: boolean; dimmed?: boolean }) {
   const { setClearance, addBlocker, resolveBlocker, draftSummary, approveSummary, issueExitClearance, setFollowUp } = useDischargeStore()
+  const getProfile = usePatientProfileStore(s => s.getProfile)
   const [expanded, setExpanded] = useState(false)
   const [newBlocker, setNewBlocker] = useState({ type: 'Other', description: '', owner: '' })
   const [showBlockerForm, setShowBlockerForm] = useState(false)
@@ -138,6 +140,13 @@ function PatientCard({ patient, highlighted = false, dimmed = false }: { patient
                 : <NeonBadge variant="warning" dot pulse>In Progress</NeonBadge>
             }
             <span className="text-sm text-slate-500">{patient.payerType}</span>
+            {(patient.payerType?.includes('PMJAY') || patient.payerType?.includes('CMHIS')) &&
+              getProfile(patient.patientId)?.abhaId && (
+                <span className="text-xs text-teal-600 font-medium">
+                  · ABHA: {getProfile(patient.patientId)?.abhaId}
+                </span>
+              )
+            }
           </div>
           <p className="text-sm text-slate-600 font-medium">{patient.diagnosis}</p>
           <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
