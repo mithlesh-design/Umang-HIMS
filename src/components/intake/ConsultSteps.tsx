@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Building2, Video, Stethoscope, CalendarDays, Clock, Wallet, ShieldCheck, Smartphone, CreditCard, Store, CheckCircle, Loader2, User, FileText } from "lucide-react"
+import { Building2, Video, Stethoscope, CalendarDays, Clock, Wallet, ShieldCheck, Smartphone, CreditCard, Store, CheckCircle, Loader2, User, FileText, Heart, HelpCircle, XCircle } from "lucide-react"
 import { ChoiceStep } from "./ChoiceStep"
 import { DOCTORS, SLOT_TIMES, INSURERS, upcomingDays, consultFee, type IntakeForm } from "@/lib/intake/data"
 import { cn } from "@/lib/utils"
+import { checkAbhaEligibility } from "@/lib/intake/abha-mock"
+import type { AbhaEligibilityResult } from "@/lib/intake/abha-mock"
 
 type Update = (patch: Partial<IntakeForm>) => void
 
@@ -99,6 +101,10 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
   const fee = consultFee(form)
   const isVideo = form.consultationType === 'video'
   const [checking, setChecking] = useState(false)
+  const [govtChecking, setGovtChecking] = useState(false)
+  const [govtResult, setGovtResult] = useState<AbhaEligibilityResult | null>(null)
+  const [showAadhaarFallback, setShowAadhaarFallback] = useState(false)
+  const [aadhaarNo, setAadhaarNo] = useState('')
   const methods = [
     { value: 'upi' as const, label: 'UPI', icon: Smartphone },
     { value: 'card' as const, label: 'Card', icon: CreditCard },
@@ -106,6 +112,30 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
   ]
   const canVerify = !!form.insurer && form.policyId.trim().length >= 4 && form.policyHolder.trim().length > 0
   const verify = async () => { setChecking(true); await new Promise(r => setTimeout(r, 900)); update({ insuranceVerified: true }); setChecking(false) }
+
+  const formatAbhaId = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 14)
+    if (digits.length <= 2) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}-${digits.slice(10)}`
+  }
+
+  const canVerifyGovt = form.abhaId.length >= 8 && form.ayushmanCardNo.trim().length >= 6
+  const canVerifyAadhaar = aadhaarNo.replace(/\D/g, '').length === 12
+
+  const verifyGovt = async (abhaId: string, cardNo: string) => {
+    setGovtChecking(true)
+    setGovtResult(null)
+    const result = await checkAbhaEligibility(abhaId, cardNo)
+    setGovtResult(result)
+    if (result.eligible) {
+      update({ govtSchemeVerified: true, schemeName: result.schemeName })
+    } else {
+      update({ govtSchemeVerified: false, schemeName: '' })
+    }
+    setGovtChecking(false)
+  }
+
   const fieldCard = "bg-white rounded-[14px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center gap-3 px-4 h-[50px] focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 transition-shadow"
   const fieldInput = "intake-input w-full h-full bg-transparent border-none text-slate-900 text-[15px] placeholder:text-slate-400"
 
@@ -117,21 +147,40 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
           <p className="text-[12px] uppercase text-slate-400 font-semibold tracking-wide">Consultation fee</p>
           <p className="text-[13px] text-slate-500">{isVideo ? `${form.slotDoctor || 'Video consult'}` : `${form.departments[0] ?? 'OPD'} · in-person`}</p>
         </div>
-        <p className="text-[26px] font-bold text-slate-900">{form.payer === 'cashless' ? <span className="text-[15px] font-bold text-[#0E7490]">Cashless</span> : `₹${fee}`}</p>
+        <p className="text-[26px] font-bold text-slate-900">
+          {form.payer === 'cashless'
+            ? <span className="text-[15px] font-bold text-[#0E7490]">Cashless</span>
+            : form.payer === 'govtScheme'
+              ? <span className="text-[14px] font-bold text-green-600">Cashless · {form.schemeName || 'Ayushman'}</span>
+              : `₹${fee}`}
+        </p>
       </div>
 
       {/* Payer */}
       <div>
         <p className="text-[12px] uppercase text-slate-400 font-semibold ml-1 mb-2 tracking-wide">How will you pay?</p>
-        <div className="grid grid-cols-2 gap-2.5">
-          {([['self', 'Self-pay', Wallet], ['cashless', 'Cashless', ShieldCheck]] as const).map(([val, label, Icon]) => {
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            ['self', 'Self-pay', Wallet],
+            ['cashless', 'Cashless', ShieldCheck],
+            ['govtScheme', 'Govt Scheme', Heart],
+          ] as const).map(([val, label, Icon]) => {
             const sel = form.payer === val
+            const isGovt = val === 'govtScheme'
             return (
-              <button key={val} onClick={() => update({ payer: val })} aria-pressed={sel}
-                className={cn("flex flex-col items-center gap-1.5 py-3.5 rounded-2xl border transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E7490]",
-                  sel ? "bg-[#0E7490] border-[#0E7490] text-white" : "bg-white border-slate-200 text-slate-700")}>
-                <Icon className={cn("h-5 w-5", sel ? "text-white" : "text-[#0E7490]")} />
-                <span className="text-[14px] font-semibold">{label}</span>
+              <button
+                key={val}
+                onClick={() => update({ payer: val, govtSchemeVerified: false, schemeName: '' })}
+                aria-pressed={sel}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E7490]",
+                  sel
+                    ? isGovt ? "bg-green-600 border-green-600 text-white" : "bg-[#0E7490] border-[#0E7490] text-white"
+                    : "bg-white border-slate-200 text-slate-700",
+                )}
+              >
+                <Icon className={cn("h-5 w-5", sel ? "text-white" : isGovt ? "text-green-600" : "text-[#0E7490]")} />
+                <span className="text-[12px] font-semibold text-center leading-tight">{label}</span>
               </button>
             )
           })}
@@ -193,6 +242,127 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
                 {checking ? <><Loader2 className="h-4.5 w-4.5 animate-spin" /> Checking with {form.insurer || 'insurer'}…</> : <><ShieldCheck className="h-4.5 w-4.5" /> Verify policy</>}
               </button>
               <p className="text-[12px] text-slate-400 ml-1">We confirm your policy is active &amp; cashless-eligible before you continue.</p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Govt Scheme → ABHA ID + Ayushman Card */}
+      {form.payer === 'govtScheme' && (
+        <div className="space-y-3">
+          {/* ABHA ID */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <p className="text-[12px] uppercase text-slate-400 font-semibold tracking-wide">ABHA ID</p>
+              <span title="14-digit Ayushman Bharat Health Account number from your ABHA card or DigiLocker">
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+              </span>
+            </div>
+            <div className={fieldCard}>
+              <Heart className="h-5 w-5 text-green-500 flex-shrink-0" aria-hidden="true" />
+              <input
+                className={fieldInput}
+                placeholder="14-XXXX-XXXX-XXXX"
+                aria-label="ABHA ID"
+                value={form.abhaId}
+                onChange={e => {
+                  update({ abhaId: formatAbhaId(e.target.value), govtSchemeVerified: false, schemeName: '' })
+                  setGovtResult(null)
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Ayushman Card No */}
+          <div className={fieldCard}>
+            <ShieldCheck className="h-5 w-5 text-green-500 flex-shrink-0" aria-hidden="true" />
+            <input
+              className={fieldInput}
+              placeholder="Ayushman Card / Family ID"
+              aria-label="Ayushman Card or Family ID"
+              value={form.ayushmanCardNo}
+              onChange={e => {
+                update({ ayushmanCardNo: e.target.value, govtSchemeVerified: false, schemeName: '' })
+                setGovtResult(null)
+              }}
+            />
+          </div>
+
+          {/* Aadhaar fallback */}
+          {showAadhaarFallback && (
+            <div className={fieldCard}>
+              <FileText className="h-5 w-5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+              <input
+                className={fieldInput}
+                placeholder="Aadhaar number (12 digits)"
+                aria-label="Aadhaar number"
+                value={aadhaarNo}
+                onChange={e => setAadhaarNo(e.target.value.replace(/\D/g, '').slice(0, 12))}
+              />
+            </div>
+          )}
+
+          {/* Verified */}
+          {form.govtSchemeVerified && govtResult?.eligible && (
+            <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-green-50 border border-green-200">
+              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13.5px] font-bold text-green-900">Eligible — {govtResult.schemeName}</p>
+                <p className="text-[12.5px] text-green-700">{govtResult.coverage} · pre-auth ref: {govtResult.preAuthRef}</p>
+                <p className="text-[11px] text-green-600 mt-0.5">Nothing to pay now.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Not eligible */}
+          {govtResult && !govtResult.eligible && (
+            <div className="rounded-2xl bg-red-50 border border-red-200 p-3.5 space-y-2">
+              <div className="flex items-start gap-2">
+                <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-bold text-red-800">Beneficiary not found</p>
+                  <p className="text-[12px] text-red-600">Check your card number or try Aadhaar-linked search.</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setShowAadhaarFallback(true)}
+                  className="text-[12px] font-semibold text-[#0E7490] underline underline-offset-2"
+                >
+                  Try Aadhaar-linked search
+                </button>
+                <span className="text-slate-300">·</span>
+                <button
+                  onClick={() => update({ payer: 'self', govtSchemeVerified: false, schemeName: '' })}
+                  className="text-[12px] font-semibold text-slate-500 underline underline-offset-2"
+                >
+                  Pay myself instead
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Verify button — hidden once verified */}
+          {!form.govtSchemeVerified && (
+            <>
+              <button
+                onClick={() => showAadhaarFallback
+                  ? verifyGovt(`aadhaar-${aadhaarNo}`, form.ayushmanCardNo)
+                  : verifyGovt(form.abhaId, form.ayushmanCardNo)
+                }
+                disabled={showAadhaarFallback ? !canVerifyAadhaar : (!canVerifyGovt || govtChecking)}
+                className={cn(
+                  "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+                  (showAadhaarFallback ? !canVerifyAadhaar : (!canVerifyGovt || govtChecking))
+                    ? "bg-slate-200 text-slate-400"
+                    : "bg-green-600 text-white hover:bg-green-700",
+                )}
+              >
+                {govtChecking
+                  ? <><Loader2 className="h-4.5 w-4.5 animate-spin" /> Checking with NHA…</>
+                  : <><ShieldCheck className="h-4.5 w-4.5" /> Verify Ayushman eligibility</>}
+              </button>
+              <p className="text-[12px] text-slate-400 ml-1">We confirm your Ayushman beneficiary status before you continue.</p>
             </>
           )}
         </div>
