@@ -878,16 +878,20 @@ export const useLabOrdersStore = create<State>()(persist((set, get) => ({
   })),
 }),
   {
-    name: 'agentix-labordersstore', version: 4,
+    name: 'agentix-labordersstore', version: 5,
     storage: createJSONStorage(() => localStorage),
     skipHydration: true,
-    // Orders are intentionally excluded from persistence so that:
-    // (a) SEED_ORDERS always load on app start — no stale data can empty the phlebotomy queue
-    // (b) Doctor-added orders appear immediately in phlebotomy via the shared in-memory store
-    partialize: (state) => ({ reflexSuggestions: state.reflexSuggestions }),
+    // Orders are persisted so cross-tab sync works: every addOrder() call writes to
+    // localStorage, firing the storage event in every other open tab, which triggers
+    // rehydrate() there. On a fresh start (or migration from v4), SEED_ORDERS are
+    // loaded via the migrate fallback so the demo queue is never empty.
+    partialize: (state) => ({ reflexSuggestions: state.reflexSuggestions, orders: state.orders }),
     migrate: (persisted: unknown, _fromVersion: number) => {
-      const s = persisted as Partial<{ reflexSuggestions: ReflexSuggestion[] }>
-      return { reflexSuggestions: Array.isArray(s?.reflexSuggestions) ? s.reflexSuggestions : [] }
+      const s = persisted as Partial<{ reflexSuggestions: ReflexSuggestion[]; orders: LabOrder[] }>
+      return {
+        reflexSuggestions: Array.isArray(s?.reflexSuggestions) ? s.reflexSuggestions : [],
+        orders: Array.isArray(s?.orders) && s.orders.length > 0 ? s.orders : SEED_ORDERS,
+      }
     },
   },
 ))
