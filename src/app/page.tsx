@@ -5,6 +5,7 @@ import { LandingHero } from "@/components/landing/LandingHero"
 import { TrustStrip } from "@/components/landing/TrustStrip"
 import { AiIntelligenceSection } from "@/components/landing/AiIntelligenceSection"
 import { ModulesBento } from "@/components/landing/ModulesBento"
+import { AyushmanSection } from "@/components/landing/AyushmanSection"
 import { TrustGovernanceSection } from "@/components/landing/TrustGovernanceSection"
 import { OutcomesMetrics } from "@/components/landing/OutcomesMetrics"
 import { PortalLauncher } from "@/components/landing/PortalLauncher"
@@ -23,6 +24,7 @@ export default function LandingPage() {
         <TrustStrip />
         <AiIntelligenceSection />
         <ModulesBento />
+        <AyushmanSection />
         <TrustGovernanceSection />
         <OutcomesMetrics />
         <PortalLauncher />
