@@ -105,6 +105,7 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
   const [govtResult, setGovtResult] = useState<AbhaEligibilityResult | null>(null)
   const [showAadhaarFallback, setShowAadhaarFallback] = useState(false)
   const [aadhaarNo, setAadhaarNo] = useState('')
+  const [verifyMethod, setVerifyMethod] = useState<'abha' | 'ayushman' | ''>('')
   const methods = [
     { value: 'upi' as const, label: 'UPI', icon: Smartphone },
     { value: 'card' as const, label: 'Card', icon: CreditCard },
@@ -120,13 +121,17 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
     return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}-${digits.slice(10)}`
   }
 
-  const canVerifyGovt = form.abhaId.length >= 8 && form.ayushmanCardNo.trim().length >= 6
+  const canVerifyGovt = verifyMethod === 'abha'
+    ? form.abhaId.length >= 8
+    : verifyMethod === 'ayushman'
+      ? form.ayushmanCardNo.trim().length >= 6
+      : false
   const canVerifyAadhaar = aadhaarNo.replace(/\D/g, '').length === 12
 
-  const verifyGovt = async (abhaId: string, cardNo: string) => {
+  const verifyGovt = async (abhaId: string, cardNo: string, method: 'abha' | 'ayushman') => {
     setGovtChecking(true)
     setGovtResult(null)
-    const result = await checkAbhaEligibility(abhaId, cardNo)
+    const result = await checkAbhaEligibility(abhaId, cardNo, method)
     setGovtResult(result)
     if (result.eligible) {
       update({ govtSchemeVerified: true, schemeName: result.schemeName })
@@ -175,6 +180,7 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
                   setShowAadhaarFallback(false)
                   setAadhaarNo('')
                   setGovtResult(null)
+                  setVerifyMethod('')
                 }}
                 aria-pressed={sel}
                 className={cn(
@@ -252,46 +258,88 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
         </div>
       )}
 
-      {/* Govt Scheme → ABHA ID + Ayushman Card */}
+      {/* Govt Scheme → choose ABHA ID or Ayushman Card (mutually exclusive) */}
       {form.payer === 'govtScheme' && (
         <div className="space-y-3">
-          {/* ABHA ID */}
+          {/* Method selector */}
           <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <p className="text-[12px] uppercase text-slate-400 font-semibold tracking-wide">ABHA ID</p>
-              <span title="14-digit Ayushman Bharat Health Account number from your ABHA card or DigiLocker">
-                <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
-              </span>
+            <p className="text-[12px] uppercase text-slate-400 font-semibold ml-1 mb-2 tracking-wide">I have my</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ['abha', 'ABHA ID', Heart, '14-digit health ID'] as const,
+                ['ayushman', 'Ayushman Card', ShieldCheck, 'Family / Beneficiary ID'] as const,
+              ]).map(([val, label, Icon, sub]) => {
+                const sel = verifyMethod === val
+                return (
+                  <button
+                    key={val}
+                    onClick={() => {
+                      setVerifyMethod(val)
+                      update({
+                        abhaId: val === 'ayushman' ? '' : form.abhaId,
+                        ayushmanCardNo: val === 'abha' ? '' : form.ayushmanCardNo,
+                        govtSchemeVerified: false, schemeName: '',
+                      })
+                      setGovtResult(null)
+                      setShowAadhaarFallback(false)
+                      setAadhaarNo('')
+                    }}
+                    aria-pressed={sel}
+                    className={cn(
+                      "flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600",
+                      sel ? "bg-green-600 border-green-600 text-white" : "bg-white border-slate-200 text-slate-700",
+                    )}
+                  >
+                    <Icon className={cn("h-5 w-5", sel ? "text-white" : "text-green-600")} />
+                    <span className="text-[12px] font-semibold leading-tight">{label}</span>
+                    <span className={cn("text-[10px] leading-tight", sel ? "text-green-100" : "text-slate-400")}>{sub}</span>
+                  </button>
+                )
+              })}
             </div>
+          </div>
+
+          {/* ABHA ID input */}
+          {verifyMethod === 'abha' && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <p className="text-[12px] uppercase text-slate-400 font-semibold tracking-wide">ABHA ID</p>
+                <span title="14-digit Ayushman Bharat Health Account number from your ABHA card or DigiLocker">
+                  <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                </span>
+              </div>
+              <div className={fieldCard}>
+                <Heart className="h-5 w-5 text-green-500 flex-shrink-0" aria-hidden="true" />
+                <input
+                  className={fieldInput}
+                  placeholder="14-XXXX-XXXX-XXXX"
+                  aria-label="ABHA ID"
+                  value={form.abhaId}
+                  onChange={e => {
+                    update({ abhaId: formatAbhaId(e.target.value), govtSchemeVerified: false, schemeName: '' })
+                    setGovtResult(null)
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Ayushman Card input */}
+          {verifyMethod === 'ayushman' && (
             <div className={fieldCard}>
-              <Heart className="h-5 w-5 text-green-500 flex-shrink-0" aria-hidden="true" />
+              <ShieldCheck className="h-5 w-5 text-green-500 flex-shrink-0" aria-hidden="true" />
               <input
                 className={fieldInput}
-                placeholder="14-XXXX-XXXX-XXXX"
-                aria-label="ABHA ID"
-                value={form.abhaId}
+                placeholder="Ayushman Card / Family ID"
+                aria-label="Ayushman Card or Family ID"
+                value={form.ayushmanCardNo}
                 onChange={e => {
-                  update({ abhaId: formatAbhaId(e.target.value), govtSchemeVerified: false, schemeName: '' })
+                  update({ ayushmanCardNo: e.target.value, govtSchemeVerified: false, schemeName: '' })
                   setGovtResult(null)
                 }}
               />
             </div>
-          </div>
-
-          {/* Ayushman Card No */}
-          <div className={fieldCard}>
-            <ShieldCheck className="h-5 w-5 text-green-500 flex-shrink-0" aria-hidden="true" />
-            <input
-              className={fieldInput}
-              placeholder="Ayushman Card / Family ID"
-              aria-label="Ayushman Card or Family ID"
-              value={form.ayushmanCardNo}
-              onChange={e => {
-                update({ ayushmanCardNo: e.target.value, govtSchemeVerified: false, schemeName: '' })
-                setGovtResult(null)
-              }}
-            />
-          </div>
+          )}
 
           {/* Aadhaar fallback */}
           {showAadhaarFallback && (
@@ -347,13 +395,17 @@ export function PaymentStep({ form, update }: { form: IntakeForm; update: Update
             </div>
           )}
 
-          {/* Verify button — hidden once verified */}
-          {!form.govtSchemeVerified && (
+          {/* Verify button — shown only after method is chosen, hidden once verified */}
+          {!form.govtSchemeVerified && verifyMethod && (
             <>
               <button
                 onClick={() => showAadhaarFallback
-                  ? verifyGovt(`aadhaar-${aadhaarNo}`, form.ayushmanCardNo)
-                  : verifyGovt(form.abhaId, form.ayushmanCardNo)
+                  ? verifyGovt(`aadhaar-${aadhaarNo}`, '', 'abha')
+                  : verifyGovt(
+                      verifyMethod === 'abha' ? form.abhaId : '',
+                      verifyMethod === 'ayushman' ? form.ayushmanCardNo : '',
+                      verifyMethod,
+                    )
                 }
                 disabled={showAadhaarFallback ? (!canVerifyAadhaar || govtChecking) : (!canVerifyGovt || govtChecking)}
                 className={cn(
