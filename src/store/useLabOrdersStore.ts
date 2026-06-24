@@ -71,6 +71,9 @@ export type TestRun = {
   callback?: { calledBy: string; calledAt: string; recipient: string; ackBy?: string }
   notes?: string
   acknowledgedAt?: string
+  // Set automatically on every mutation that changes this test (see stamping set
+  // wrapper). Drives last-write-wins conflict resolution in the cross-tab merge.
+  updatedAt?: string
 }
 
 export type LabOrder = {
@@ -195,6 +198,74 @@ export function generateAnalyzerValue(testCode: string, spec: AnalyteSpec, idx: 
   if (refHigh >= 100)  return Math.round(raw)
   if (refHigh >= 10)   return Math.round(raw * 10) / 10
   return Math.round(raw * 100) / 100
+}
+
+// ─── Cross-tab convergent merge (prevents last-write-wins clobber) ──────────
+// Multiple tabs (doctor, lab, reception …) each hold an independent in-memory
+// copy of `orders`. Without merging, whichever tab persists last overwrites the
+// whole array and can drop another tab's just-written order or reset its
+// in-progress work. We merge instead of replace:
+//   • orders are append-only (unique id) → union by id, no order is ever lost;
+//   • each test carries an `updatedAt` stamp (set on every real mutation) →
+//     last-write-wins per test, which correctly handles forward AND backward
+//     transitions (unclaim, recollect) and ignores a stale tab's untouched tests.
+const rev = (t: TestRun) => t.updatedAt ?? ''        // ISO strings sort chronologically
+const maxRev = (tests: TestRun[]) => tests.reduce((m, t) => (rev(t) > m ? rev(t) : m), '')
+
+function mergeTests(prev: TestRun[], next: TestRun[]): TestRun[] {
+  const byId = new Map(prev.map(t => [t.id, t]))
+  for (const t of next) {
+    const ex = byId.get(t.id)
+    // Newer updatedAt wins; tie / new test → outgoing (next).
+    byId.set(t.id, !ex || rev(t) >= rev(ex) ? t : ex)
+  }
+  return [...byId.values()]
+}
+
+function mergeOrders(prev: LabOrder[], next: LabOrder[]): LabOrder[] {
+  const byId = new Map(prev.map(o => [o.id, o]))
+  for (const o of next) {
+    const ex = byId.get(o.id)
+    if (!ex) { byId.set(o.id, o); continue }
+    const tests = mergeTests(ex.tests, o.tests)
+    // Specimens lack their own stamp; take them from whichever side's tests were
+    // most recently touched (collection advances both together).
+    const specimens = maxRev(o.tests) >= maxRev(ex.tests) ? o.specimens : ex.specimens
+    byId.set(o.id, { ...o, tests, specimens })
+  }
+  // Newest first by orderedAt (matches addOrder prepend behaviour).
+  return [...byId.values()].sort((a, b) =>
+    new Date(b.orderedAt).getTime() - new Date(a.orderedAt).getTime())
+}
+
+function mergeById<T extends { id: string }>(prev: T[], next: T[]): T[] {
+  const byId = new Map(prev.map(x => [x.id, x]))
+  for (const x of next) byId.set(x.id, x)
+  return [...byId.values()]
+}
+
+// Read-merge-write wrapper: every persist merges with the latest localStorage
+// snapshot, so concurrent tabs converge instead of clobbering one another. The
+// stored value is the Zustand persist envelope { state, version }.
+const mergingStorage = {
+  getItem: (name: string) => localStorage.getItem(name),
+  setItem: (name: string, value: string) => {
+    try {
+      const incoming = JSON.parse(value)
+      const existingRaw = localStorage.getItem(name)
+      if (existingRaw && incoming?.state) {
+        const existing = JSON.parse(existingRaw)
+        const es = existing?.state ?? {}
+        incoming.state.orders = mergeOrders(es.orders ?? [], incoming.state.orders ?? [])
+        incoming.state.reflexSuggestions =
+          mergeById(es.reflexSuggestions ?? [], incoming.state.reflexSuggestions ?? [])
+        localStorage.setItem(name, JSON.stringify(incoming))
+        return
+      }
+    } catch { /* fall through to plain write */ }
+    localStorage.setItem(name, value)
+  },
+  removeItem: (name: string) => localStorage.removeItem(name),
 }
 
 // ─── State ────────────────────────────────────────────────────────────────
@@ -517,7 +588,35 @@ const SEED_ORDERS: LabOrder[] = [
 
 // ─── Store ────────────────────────────────────────────────────────────────
 
-export const useLabOrdersStore = create<State>()(persist((set, get) => ({
+export const useLabOrdersStore = create<State>()(persist((rawSet, get) => {
+  // Stamping set wrapper: whenever an action produces a new/changed test object
+  // (detected by reference inequality vs. the previous state — actions return the
+  // same `t` reference for untouched tests), we tag it with `updatedAt`. This is
+  // what makes the cross-tab merge a correct last-write-wins (see mergeTests).
+  const set: typeof rawSet = ((partial, replace) => {
+    rawSet((state) => {
+      const next = typeof partial === 'function'
+        ? (partial as (s: State) => Partial<State>)(state)
+        : partial
+      if (next && Array.isArray(next.orders)) {
+        const prevTests = new Map<string, TestRun>()
+        for (const o of state.orders) for (const t of o.tests) prevTests.set(t.id, t)
+        const now = new Date().toISOString()
+        next.orders = next.orders.map(o => {
+          let changed = false
+          const tests = o.tests.map(t => {
+            if (prevTests.get(t.id) === t) return t   // untouched → keep stamp
+            changed = true
+            return { ...t, updatedAt: now }            // new or modified → stamp
+          })
+          return changed ? { ...o, tests } : o
+        })
+      }
+      return next
+    }, replace as false | undefined)
+  }) as typeof rawSet
+
+  return {
   orders: SEED_ORDERS,
   reflexSuggestions: [],
 
@@ -876,10 +975,14 @@ export const useLabOrdersStore = create<State>()(persist((set, get) => ({
   dismissReflex: (suggestionId) => set(s => ({
     reflexSuggestions: s.reflexSuggestions.filter(rs => rs.id !== suggestionId),
   })),
-}),
+  }
+},
   {
     name: 'agentix-labordersstore', version: 5,
-    storage: createJSONStorage(() => localStorage),
+    // mergingStorage makes every persist a read-merge-write against the latest
+    // localStorage snapshot, so concurrent tabs converge instead of clobbering
+    // each other (no lost doctor orders, no reset lab progress — see mergeOrders).
+    storage: createJSONStorage(() => mergingStorage),
     skipHydration: true,
     // Orders are persisted so cross-tab sync works: every addOrder() call writes to
     // localStorage, firing the storage event in every other open tab, which triggers
