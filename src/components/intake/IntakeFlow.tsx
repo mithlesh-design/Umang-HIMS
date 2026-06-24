@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Activity, ArrowRight } from "lucide-react"
 import { usePatientStore } from "@/store/usePatientStore"
+import { usePatientProfileStore, emptyProfile } from "@/store/usePatientProfileStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import { usePatientLiveStore } from "@/store/usePatientLiveStore"
 import { notifyAndAuditMany } from "@/lib/notifyAndAudit"
@@ -69,6 +70,7 @@ export function IntakeFlow() {
     const newId = `PT-${Date.now()}`
     const triage = triageScore(form.symptoms, form.symptomDurations)
     const estWaitMins = (patients.filter(p => ['waiting', 'vitals'].includes(p.queueStatus)).length + 1) * 4
+    const isGovtScheme = form.payer === 'govtScheme'
     addPatient({
       id: newId,
       name: form.name,
@@ -82,12 +84,19 @@ export function IntakeFlow() {
       department: form.departments[0] ?? 'General Medicine',
       departments: form.departments,
       visitTypes: [mode === 'video' ? 'Video consult' : 'In-person OPD'],
-      insurer: form.payer === 'cashless' ? (form.insurer || undefined) : undefined,
+      insurer: isGovtScheme ? form.schemeName : (form.payer === 'cashless' ? (form.insurer || undefined) : undefined),
       symptoms: form.symptoms,
       history: [],
       triageLevel: triage.level,
       hasReports: form.hasReports,
     })
+    if (isGovtScheme && form.abhaId) {
+      usePatientProfileStore.getState().saveProfile(
+        newId,
+        { ...emptyProfile(), abhaId: form.abhaId, payerType: 'Govt scheme', insurer: form.schemeName },
+        form.name,
+      )
+    }
     let fToken: string | null = null
     if (form.dishaConsent && form.familyPhone.trim()) fToken = generateFamilyToken(newId, [form.familyPhone.trim()], true)
 
@@ -101,7 +110,7 @@ export function IntakeFlow() {
     notifyAndAuditMany(['reception', 'doctor'], {
       type: 'appointment', priority: triage.level === 'Critical' ? 'critical' : triage.level === 'High' ? 'high' : 'medium',
       title: `Self check-in · ${form.name}`,
-      body: `${form.name} just checked in via kiosk. Triage: ${triage.level}. ${form.symptoms.length ? 'Symptoms: ' + form.symptoms.join(', ') + '.' : 'No symptoms provided.'} Token #${newToken}.`,
+      body: `${form.name} just checked in via kiosk. Triage: ${triage.level}. ${isGovtScheme ? `Govt scheme: ${form.schemeName} · ABHA verified. ` : ''}${form.symptoms.length ? 'Symptoms: ' + form.symptoms.join(', ') + '.' : 'No symptoms provided.'} Token #${newToken}.`,
       patientName: form.name,
       audit: { action: 'reception_registered', resource: 'patient', resourceId: newId, detail: `Kiosk self-check-in completed · token ${newToken}`, userName: form.name },
     })
